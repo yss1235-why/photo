@@ -1,49 +1,41 @@
-import { Download, Printer, RotateCcw } from "lucide-react";
+import { Printer, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ActionButtonsProps {
-  onDownload: () => void;
   onPrint: () => void;
-  onReset: () => void;
+  onBack?: () => void;
   disabled?: boolean;
+  showBackButton?: boolean;
 }
 
 export const ActionButtons = ({ 
-  onDownload, 
   onPrint, 
-  onReset,
-  disabled = false 
+  onBack,
+  disabled = false,
+  showBackButton = true
 }: ActionButtonsProps) => {
   return (
-    <div className="flex flex-wrap gap-3">
-      <Button 
-        onClick={onDownload} 
-        disabled={disabled}
-        className="flex-1 min-w-[160px] gap-2"
-        size="lg"
-      >
-        <Download className="w-5 h-5" />
-        Download PNG
-      </Button>
+    <div className="flex flex-col sm:flex-row gap-3 w-full">
+      {showBackButton && onBack && (
+        <Button 
+          onClick={onBack} 
+          disabled={disabled}
+          variant="outline"
+          className="flex-1 gap-2 order-2 sm:order-1"
+          size="lg"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Back to Edit
+        </Button>
+      )}
       <Button 
         onClick={onPrint} 
         disabled={disabled}
-        variant="secondary"
-        className="flex-1 min-w-[160px] gap-2"
+        className="flex-1 gap-2 order-1 sm:order-2"
         size="lg"
       >
         <Printer className="w-5 h-5" />
-        Print
-      </Button>
-      <Button 
-        onClick={onReset} 
-        disabled={disabled}
-        variant="outline"
-        size="lg"
-        className="gap-2"
-      >
-        <RotateCcw className="w-5 h-5" />
-        Reset
+        Print Photo Sheet
       </Button>
     </div>
   );
