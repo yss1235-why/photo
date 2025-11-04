@@ -109,3 +109,66 @@ const Index = () => {
           />
         );
       case 6:
+        return (
+          <Step6Preview
+            imageId={photoData.imageId!}
+            processedImage={photoData.processed || photoData.cropped!}
+            layout={selectedLayout}
+            onPrint={handlePrint}
+            onBack={handleBack}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary rounded-lg flex items-center justify-center">
+              <Camera className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">
+                Passport Photo Studio
+              </h1>
+              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
+                Professional photo processing in steps
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Progress Navigation */}
+      {currentStep > 1 && (
+        <StepNavigation
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          onBack={handleBack}
+          mode={mode}
+        />
+      )}
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6 md:py-8">
+        <div className="max-w-5xl mx-auto">
+          {renderStep()}
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border mt-16 py-6">
+        <div className="container mx-auto px-4 text-center text-xs md:text-sm text-muted-foreground">
+          <p>© 2025 Passport Photo Studio. Professional photo processing made simple.</p>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default Index;
