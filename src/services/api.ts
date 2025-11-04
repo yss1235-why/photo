@@ -1,7 +1,16 @@
-import { ApiResponse, UploadResponse, ProcessResponse, SheetPreviewResponse, CropData, ProcessingMode } from "@/types";
+import { 
+  ApiResponse, 
+  UploadResponse, 
+  ProcessResponse, 
+  SheetPreviewResponse, 
+  CropData, 
+  ProcessingMode 
+} from "@/types";
 
-// Base API URL - Update this with your actual backend URL
-const API_BASE_URL = process.env.VITE_API_URL || "http://localhost:8000";
+// Get API URL from environment variable
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+console.log("API Base URL:", API_BASE_URL); // For debugging
 
 class ApiService {
   private async request<T>(
@@ -9,7 +18,10 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const url = `${API_BASE_URL}${endpoint}`;
+      console.log("API Request:", url); // Debug log
+      
+      const response = await fetch(url, {
         ...options,
         headers: {
           ...options.headers,
@@ -17,7 +29,8 @@ class ApiService {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
@@ -26,6 +39,7 @@ class ApiService {
         data,
       };
     } catch (error) {
+      console.error("API Error:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error occurred",
@@ -57,25 +71,9 @@ class ApiService {
       body: JSON.stringify({
         image_id: imageId,
         mode,
-        enhance_level: enhanceLevel / 100, // Convert 0-100 to 0-1
+        enhance_level: enhanceLevel / 100,
         background,
         crop_face: true,
-      }),
-    });
-  }
-
-  async cropPhoto(
-    imageId: string,
-    cropData: CropData
-  ): Promise<ApiResponse<{ croppedImageUrl: string }>> {
-    return this.request<{ croppedImageUrl: string }>("/crop", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        image_id: imageId,
-        crop_data: cropData,
       }),
     });
   }
@@ -91,7 +89,7 @@ class ApiService {
       },
       body: JSON.stringify({
         task_id: imageId,
-        strength: strength / 100, // Convert 0-100 to 0-1
+        strength: strength / 100,
       }),
     });
   }
@@ -116,20 +114,19 @@ class ApiService {
     });
   }
 
-  async printSheet(
+  async downloadSheet(
     imageId: string,
-    copies: number = 1,
-    printer: string = "default"
-  ): Promise<ApiResponse<{ status: string; jobId: string }>> {
-    return this.request<{ status: string; jobId: string }>("/print", {
+    layout: "3x4" | "2x3"
+  ): Promise<ApiResponse<{ file: string; filename: string }>> {
+    return this.request<{ file: string; filename: string }>("/download", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         image_id: imageId,
-        copies,
-        printer,
+        layout,
+        format: "png",
       }),
     });
   }
