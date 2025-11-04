@@ -63,4 +63,41 @@ const Step5Layout = ({ selectedLayout, onLayoutSelect }: Step5LayoutProps) => {
                   <div key={i} className="bg-primary/20 rounded border border-primary/30" />
                 ))}
               </div>
-              <div className="absolute bottom-
+              <div className="absolute bottom-2 right-2 bg-background px-2 py-1 rounded text-xs font-semibold">
+                3×4
+              </div>
+            </div>
+          </div>
+          <h3 className="font-semibold text-foreground mb-2">Custom Layout</h3>
+          <ul className="space-y-1 text-sm text-muted-foreground">
+            <li>• 12 passport photos (3×4 grid)</li>
+            <li>• 4×6 inch sheet (portrait)</li>
+            <li>• Standard passport size (3.5×4.5cm)</li>
+            <li>• Black borders for easy cutting</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Info Card */}
+      <div className="bg-muted/50 rounded-lg p-4 border border-border max-w-2xl mx-auto">
+        <p className="text-sm text-muted-foreground text-center">
+          📏 All photos are exactly 3.5cm × 4.5cm with 2px black borders at 300 DPI
+        </p>
+      </div>
+
+      {/* Continue Button */}
+      <div className="max-w-md mx-auto">
+        <Button
+          onClick={handleContinue}
+          className="w-full gap-2"
+          size="lg"
+        >
+          Preview Final Sheet
+          <ArrowRight className="w-5 h-5" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default Step5Layout;
