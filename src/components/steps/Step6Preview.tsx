@@ -1,88 +1,120 @@
 import { useEffect, useState } from "react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { CheckCircle } from "lucide-react";
+import { apiService } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Step6PreviewProps {
+  imageId: string;
   processedImage: string;
   layout: "standard" | "custom";
   onPrint: () => void;
   onBack: () => void;
 }
 
-const Step6Preview = ({ processedImage, layout, onPrint, onBack }: Step6PreviewProps) => {
+const Step6Preview = ({ imageId, processedImage, layout, onPrint, onBack }: Step6PreviewProps) => {
+  const { toast } = useToast();
   const [sheetPreview, setSheetPreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
 
   useEffect(() => {
     generateSheetPreview();
-  }, [processedImage, layout]);
+  }, [imageId, layout]);
 
   const generateSheetPreview = async () => {
     setIsGenerating(true);
     
-    // Simulate sheet generation
-    setTimeout(() => {
-      // In production, this would call the backend API
-      // const response = await apiService.previewSheet(imageId, layout);
+    try {
+      const apiLayout = layout === "standard" ? "3x4" : "2x3";
+      const response = await apiService.previewSheet(imageId, apiLayout);
       
-      // For demo, create a simple preview
-      createPreviewSheet();
-    }, 1500);
+      if (response.success && response.data) {
+        setSheetPreview(response.data.preview_sheet);
+        toast({
+          title: "✅ Preview ready",
+          description: `${apiLayout} layout generated`,
+        });
+      } else {
+        throw new Error(response.error || "Preview generation failed");
+      }
+    } catch (error) {
+      console.error("Preview error:", error);
+      toast({
+        title: "Preview generation failed",
+        description: error instanceof Error ? error.message : "Using processed image",
+        variant: "destructive",
+      });
+      // Fallback: use processed image
+      setSheetPreview(processedImage);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const createPreviewSheet = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    // 4x6 inches at 150 DPI for preview (actual print is 300 DPI)
-    const width = 600;  // 4 inches * 150 DPI
-    const height = 900; // 6 inches * 150 DPI
-    
-    canvas.width = width;
-    canvas.height = height;
-    
-    if (ctx) {
-      // White background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
+  const handlePrint = async () => {
+    try {
+      const apiLayout = layout === "standard" ? "3x4" : "2x3";
+      const response = await apiService.downloadSheet(imageId, apiLayout);
       
-      // Calculate grid
-      const cols = layout === "standard" ? 3 : 2;
-      const rows = layout === "standard" ? 4 : 3;
-      const photoCount = cols * rows;
-      
-      // Passport photo aspect ratio: 3.5:4.5 = 0.7778
-      const aspectRatio = 3.5 / 4.5;
-      const padding = 10;
-      
-      const availableWidth = (width - padding * (cols + 1)) / cols;
-      const photoWidth = availableWidth;
-      const photoHeight = photoWidth / aspectRatio;
-      
-      // Load and draw image
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            const x = padding + col * (photoWidth + padding);
-            const y = padding + row * (photoHeight + padding);
-            
-            // Draw photo
-            ctx.drawImage(img, x, y, photoWidth, photoHeight);
-            
-            // Draw border
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x, y, photoWidth, photoHeight);
-          }
+      if (response.success && response.data) {
+        // Open print dialog with the downloaded sheet
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Print Passport Photo</title>
+                <style>
+                  @page {
+                    size: 4in 6in;
+                    margin: 0;
+                  }
+                  @media print {
+                    body { 
+                      margin: 0; 
+                      padding: 0;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      height: 100vh;
+                    }
+                    img { 
+                      width: 4in;
+                      height: 6in;
+                      object-fit: contain;
+                      display: block;
+                    }
+                  }
+                </style>
+              </head>
+              <body>
+                <img src="${response.data.file}" alt="Passport Photo Sheet" />
+              </body>
+            </html>
+          `);
+          printWindow.document.close();
+          setTimeout(() => {
+            printWindow.print();
+          }, 250);
         }
         
-        setSheetPreview(canvas.toDataURL('image/png'));
-        setIsGenerating(false);
-      };
-      img.src = processedImage;
+        toast({
+          title: "Printing...",
+          description: "Print dialog opened",
+        });
+      } else {
+        throw new Error(response.error || "Download failed");
+      }
+    } catch (error) {
+      console.error("Print error:", error);
+      toast({
+        title: "Print failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
     }
+    
+    onPrint();
   };
 
   return (
@@ -158,7 +190,7 @@ const Step6Preview = ({ processedImage, layout, onPrint, onBack }: Step6PreviewP
       {/* Action Buttons */}
       <div className="max-w-2xl mx-auto">
         <ActionButtons
-          onPrint={onPrint}
+          onPrint={handlePrint}
           onBack={onBack}
           disabled={isGenerating}
           showBackButton={true}
