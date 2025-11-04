@@ -1,3 +1,5 @@
+// src/components/steps/Step3Crop.tsx
+
 import { useState } from "react";
 import { CropTool } from "@/components/CropTool";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,14 @@ const Step3Crop = ({ imageUrl, imageId, onCropComplete }: Step3CropProps) => {
 
   const handleCropChange = (data: CropData) => {
     setCropData(data);
+    
+    // ✅ Log crop data for debugging
+    console.log("📐 Crop data received:", {
+      normalized: `${(data.x * 100).toFixed(1)}%, ${(data.y * 100).toFixed(1)}%`,
+      size: `${(data.width * 100).toFixed(1)}% × ${(data.height * 100).toFixed(1)}%`,
+      natural: `${data.naturalWidth}×${data.naturalHeight}`,
+      zoom: `${(data.zoom * 100).toFixed(0)}%`
+    });
   };
 
   const handleContinue = async () => {
@@ -29,6 +39,37 @@ const Step3Crop = ({ imageUrl, imageId, onCropComplete }: Step3CropProps) => {
       return;
     }
 
+    // ✅ Validate crop data before proceeding
+    if (!cropData.naturalWidth || !cropData.naturalHeight) {
+      toast({
+        title: "Image not loaded",
+        description: "Please wait for the image to load completely",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate normalized coordinates
+    if (cropData.x < 0 || cropData.x > 1 || cropData.y < 0 || cropData.y > 1) {
+      toast({
+        title: "Invalid crop position",
+        description: "Please adjust the crop area within the image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (cropData.width <= 0 || cropData.width > 1 || cropData.height <= 0 || cropData.height > 1) {
+      toast({
+        title: "Invalid crop size",
+        description: "Please adjust the crop area to a valid size",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("✅ Crop validation passed, proceeding to next step");
+    
     // Pass both the image URL and crop data to next step
     // Backend will use the crop data during processing
     onCropComplete(imageUrl, cropData);
@@ -69,13 +110,26 @@ const Step3Crop = ({ imageUrl, imageId, onCropComplete }: Step3CropProps) => {
         </ul>
       </div>
 
+      {/* ✅ Show crop status */}
+      {cropData && (
+        <div className="bg-primary/10 rounded-lg p-3 border border-primary/30">
+          <div className="text-xs font-medium text-primary flex items-center gap-2">
+            <span>✓</span>
+            <span>
+              Crop area set: {(cropData.width * 100).toFixed(0)}% × {(cropData.height * 100).toFixed(0)}% 
+              @ {(cropData.zoom * 100).toFixed(0)}% zoom
+            </span>
+          </div>
+        </div>
+      )}
+
       <Button 
         onClick={handleContinue} 
         disabled={!cropData}
         className="w-full gap-2"
         size="lg"
       >
-        Continue
+        Continue to Enhancement
         <ArrowRight className="w-5 h-5" />
       </Button>
     </div>
