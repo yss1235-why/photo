@@ -22,7 +22,7 @@ const Index = () => {
   });
   const [mode, setMode] = useState<ProcessingMode>("passport");
   const [cropData, setCropData] = useState<CropData | null>(null);
-  const [enhancementLevel, setEnhancementLevel] = useState(60);
+  const [enhancementLevel, setEnhancementLevel] = useState(40); // Changed from 60 to 40
   const [selectedLayout, setSelectedLayout] = useState<"standard" | "custom">("standard");
 
   const totalSteps = 6;
@@ -51,7 +51,7 @@ const Index = () => {
 
   const handleCropComplete = (croppedImage: string, cropCoords: CropData) => {
     setPhotoData({ ...photoData, cropped: croppedImage });
-    setCropData(cropCoords);
+    setCropData(cropCoords); // Store crop data
     handleNext();
   };
 
@@ -97,6 +97,7 @@ const Index = () => {
             imageId={photoData.imageId!}
             mode={mode}
             enhancementLevel={enhancementLevel}
+            cropData={cropData} // Pass crop data
             onEnhancementChange={handleEnhancementChange}
             onEnhancementComplete={handleEnhancementComplete}
           />
@@ -137,7 +138,7 @@ const Index = () => {
                 Passport Photo Studio
               </h1>
               <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
-                Professional photo processing in steps
+                Professional AI-powered photo processing
               </p>
             </div>
           </div>
@@ -164,7 +165,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border mt-16 py-6">
         <div className="container mx-auto px-4 text-center text-xs md:text-sm text-muted-foreground">
-          <p>© 2025 Passport Photo Studio. Professional photo processing made simple.</p>
+          <p>© 2025 Passport Photo Studio. AI-powered professional photo processing.</p>
         </div>
       </footer>
     </div>
