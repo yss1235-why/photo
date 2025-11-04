@@ -5,6 +5,7 @@ export interface PhotoData {
   processed: string | null;
   cropped: string | null;
   final: string | null;
+  imageId?: string; // Add this
 }
 
 export interface CropData {
@@ -28,19 +29,21 @@ export interface ApiResponse<T> {
 }
 
 export interface UploadResponse {
-  imageUrl: string;
-  imageId: string;
-  faceDetected: boolean;
+  image_id: string;
+  face_detected: boolean;
+  dimensions: number[];
+  status: string;
 }
 
 export interface ProcessResponse {
-  processedImageUrl: string;
-  faceConfidence: number;
-  backgroundRemoved: boolean;
+  processed_image: string;
+  face_confidence: number;
+  bg_removed: boolean;
+  status: string;
 }
 
 export interface SheetPreviewResponse {
-  previewUrl: string;
-  sheetSize: string;
+  preview_sheet: string;
+  sheet_size: string;
   dpi: number;
 }
