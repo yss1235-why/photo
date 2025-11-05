@@ -5,8 +5,7 @@ import {
   UploadResponse, 
   ProcessResponse, 
   SheetPreviewResponse, 
-  CropData, 
-  ProcessingMode 
+  CropData
 } from "@/types";
 import { cloudinaryService } from "./cloudinary";
 
@@ -64,11 +63,10 @@ class ApiService {
       
       if (cloudinaryResult.success) {
         console.log("✅ Cloudinary upload successful");
-        this.cloudinaryFallbackCount = 0; // Reset counter on success
+        this.cloudinaryFallbackCount = 0;
         return cloudinaryResult as ApiResponse<UploadResponse>;
       }
       
-      // Cloudinary failed, increment counter
       this.cloudinaryFallbackCount++;
       console.warn(`⚠️ Cloudinary failed (${this.cloudinaryFallbackCount}/${this.maxCloudinaryAttempts}), trying Python...`);
     }
@@ -83,12 +81,8 @@ class ApiService {
       body: formData,
     });
 
-    if (result.success) {
-      console.log("✅ Python upload successful");
-      // Add source indicator
-      if (result.data) {
-        (result.data as any).source = "python";
-      }
+    if (result.success && result.data) {
+      (result.data as any).source = "python";
     }
 
     return result;
@@ -96,25 +90,20 @@ class ApiService {
 
   /**
    * Process photo - Cloudinary primary, Python fallback
+   * Always uses passport mode with 40% enhancement (no parameters needed)
    */
   async processPhoto(
     imageId: string,
-    mode: ProcessingMode,
-    enhanceLevel: number,
-    background: string = "white",
     cropData?: CropData
   ): Promise<ApiResponse<ProcessResponse>> {
-    // Detect source from imageId
     const isCloudinaryImage = !imageId.startsWith("img_");
 
     // Try Cloudinary if image is from Cloudinary
     if (this.cloudinaryEnabled && isCloudinaryImage && this.cloudinaryFallbackCount < this.maxCloudinaryAttempts) {
-      console.log("🎨 Attempting Cloudinary processing (primary)...");
+      console.log("🎨 Attempting Cloudinary processing (passport mode, 40% enhancement)...");
       
       const cloudinaryResult = await cloudinaryService.processImage(
         imageId,
-        mode,
-        enhanceLevel,
         cropData
       );
       
@@ -137,39 +126,15 @@ class ApiService {
       },
       body: JSON.stringify({
         image_id: imageId,
-        mode,
-        enhance_level: enhanceLevel / 100,
-        background,
-        crop_face: true,
         crop_data: cropData,
       }),
     });
 
     if (result.success && result.data) {
-      console.log("✅ Python processing successful");
       (result.data as any).source = "python";
     }
 
     return result;
-  }
-
-  /**
-   * Adjust enhancement - Python only (Cloudinary doesn't support re-adjustment)
-   */
-  async adjustEnhancement(
-    imageId: string,
-    strength: number
-  ): Promise<ApiResponse<ProcessResponse>> {
-    return this.request<ProcessResponse>("/apply-strength", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        task_id: imageId,
-        strength: strength / 100,
-      }),
-    });
   }
 
   /**
@@ -196,7 +161,7 @@ class ApiService {
   }
 
   /**
-   * Download sheet - Works with both sources
+   * Download sheet
    */
   async downloadSheet(
     imageId: string,
@@ -222,7 +187,7 @@ class ApiService {
   }
 
   /**
-   * Print sheet - Works with both sources
+   * Print sheet
    */
   async printSheet(
     imageId: string,
