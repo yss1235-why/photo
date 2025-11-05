@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Step1Upload from "@/components/steps/Step1Upload";
-import Step2ModeSelect from "@/components/steps/Step2ModeSelect";
-import Step3Crop from "@/components/steps/Step3Crop";
-import Step4Enhance from "@/components/steps/Step4Enhance";
-import Step5Layout from "@/components/steps/Step5Layout";
-import Step6Preview from "@/components/steps/Step6Preview";
+import Step2Crop from "@/components/steps/Step2Crop";
+import Step3Layout from "@/components/steps/Step3Layout";
+import Step4Processing from "@/components/steps/Step4Processing";
+import Step5BeforeAfter from "@/components/steps/Step5BeforeAfter";
+import Step6Final from "@/components/steps/Step6Final";
 import StepNavigation from "@/components/StepNavigation";
-import { PhotoData, ProcessingMode, CropData } from "@/types";
+import { PhotoData, CropData } from "@/types";
 
 const Index = () => {
   const { toast } = useToast();
@@ -20,9 +20,7 @@ const Index = () => {
     final: null,
     imageId: undefined,
   });
-  const [mode, setMode] = useState<ProcessingMode>("passport");
   const [cropData, setCropData] = useState<CropData | null>(null);
-  const [enhancementLevel, setEnhancementLevel] = useState(40); // Changed from 60 to 40
   const [selectedLayout, setSelectedLayout] = useState<"standard" | "custom">("standard");
 
   const totalSteps = 6;
@@ -39,33 +37,37 @@ const Index = () => {
     }
   };
 
+  const handleRetake = () => {
+    setCurrentStep(1);
+    setPhotoData({
+      original: null,
+      processed: null,
+      cropped: null,
+      final: null,
+      imageId: undefined,
+    });
+    setCropData(null);
+    setSelectedLayout("standard");
+  };
+
   const handleUploadComplete = (imageUrl: string, imageId: string) => {
     setPhotoData({ ...photoData, original: imageUrl, imageId });
     handleNext();
   };
 
-  const handleModeSelect = (selectedMode: ProcessingMode) => {
-    setMode(selectedMode);
-    handleNext();
-  };
-
   const handleCropComplete = (croppedImage: string, cropCoords: CropData) => {
     setPhotoData({ ...photoData, cropped: croppedImage });
-    setCropData(cropCoords); // Store crop data
-    handleNext();
-  };
-
-  const handleEnhancementChange = (value: number) => {
-    setEnhancementLevel(value);
-  };
-
-  const handleEnhancementComplete = (processedImage: string) => {
-    setPhotoData({ ...photoData, processed: processedImage });
+    setCropData(cropCoords);
     handleNext();
   };
 
   const handleLayoutSelect = (layout: "standard" | "custom") => {
     setSelectedLayout(layout);
+    handleNext();
+  };
+
+  const handleProcessingComplete = (processedImage: string) => {
+    setPhotoData({ ...photoData, processed: processedImage });
     handleNext();
   };
 
@@ -81,42 +83,45 @@ const Index = () => {
       case 1:
         return <Step1Upload onUploadComplete={handleUploadComplete} />;
       case 2:
-        return <Step2ModeSelect onModeSelect={handleModeSelect} selectedMode={mode} />;
-      case 3:
         return (
-          <Step3Crop
+          <Step2Crop
             imageUrl={photoData.original!}
             imageId={photoData.imageId!}
             onCropComplete={handleCropComplete}
           />
         );
-      case 4:
+      case 3:
         return (
-          <Step4Enhance
-            originalImage={photoData.cropped || photoData.original!}
-            imageId={photoData.imageId!}
-            mode={mode}
-            enhancementLevel={enhancementLevel}
-            cropData={cropData} // Pass crop data
-            onEnhancementChange={handleEnhancementChange}
-            onEnhancementComplete={handleEnhancementComplete}
-          />
-        );
-      case 5:
-        return (
-          <Step5Layout
+          <Step3Layout
             selectedLayout={selectedLayout}
             onLayoutSelect={handleLayoutSelect}
           />
         );
+      case 4:
+        return (
+          <Step4Processing
+            originalImage={photoData.cropped || photoData.original!}
+            imageId={photoData.imageId!}
+            cropData={cropData}
+            onProcessingComplete={handleProcessingComplete}
+          />
+        );
+      case 5:
+        return (
+          <Step5BeforeAfter
+            originalImage={photoData.cropped || photoData.original!}
+            processedImage={photoData.processed!}
+            onContinue={handleNext}
+            onRetake={handleRetake}
+          />
+        );
       case 6:
         return (
-          <Step6Preview
+          <Step6Final
             imageId={photoData.imageId!}
-            processedImage={photoData.processed || photoData.cropped!}
             layout={selectedLayout}
             onPrint={handlePrint}
-            onBack={handleBack}
+            onRetake={handleRetake}
           />
         );
       default:
@@ -137,37 +142,25 @@ const Index = () => {
               <h1 className="text-xl md:text-2xl font-bold text-foreground">
                 Passport Photo Studio
               </h1>
-              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">
-                Professional AI-powered photo processing
-              </p>
             </div>
           </div>
         </div>
       </header>
 
       {/* Progress Navigation */}
-      {currentStep > 1 && (
+      {currentStep > 1 && currentStep < 6 && (
         <StepNavigation
           currentStep={currentStep}
           totalSteps={totalSteps}
           onBack={handleBack}
-          mode={mode}
+          mode="passport"
         />
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 md:py-8">
-        <div className="max-w-5xl mx-auto">
-          {renderStep()}
-        </div>
+      <main className="container mx-auto">
+        {renderStep()}
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border mt-16 py-6">
-        <div className="container mx-auto px-4 text-center text-xs md:text-sm text-muted-foreground">
-          <p>© 2025 Passport Photo Studio. AI-powered professional photo processing.</p>
-        </div>
-      </footer>
     </div>
   );
 };
