@@ -1,3 +1,5 @@
+// src/services/api.ts - Hybrid Cloudinary + Python Service
+
 import { 
   ApiResponse, 
   UploadResponse, 
@@ -6,10 +8,16 @@ import {
   CropData, 
   ProcessingMode 
 } from "@/types";
+import { cloudinaryService } from "./cloudinary";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const USE_CLOUDINARY = import.meta.env.VITE_USE_CLOUDINARY !== "false";
 
 class ApiService {
+  private cloudinaryEnabled = USE_CLOUDINARY;
+  private cloudinaryFallbackCount = 0;
+  private maxCloudinaryAttempts = 3;
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -44,15 +52,51 @@ class ApiService {
     }
   }
 
+  /**
+   * Upload photo - Cloudinary primary, Python fallback
+   */
   async uploadPhoto(file: File): Promise<ApiResponse<UploadResponse>> {
+    // Try Cloudinary first
+    if (this.cloudinaryEnabled && this.cloudinaryFallbackCount < this.maxCloudinaryAttempts) {
+      console.log("📤 Attempting Cloudinary upload (primary)...");
+      
+      const cloudinaryResult = await cloudinaryService.uploadImage(file);
+      
+      if (cloudinaryResult.success) {
+        console.log("✅ Cloudinary upload successful");
+        this.cloudinaryFallbackCount = 0; // Reset counter on success
+        return cloudinaryResult as ApiResponse<UploadResponse>;
+      }
+      
+      // Cloudinary failed, increment counter
+      this.cloudinaryFallbackCount++;
+      console.warn(`⚠️ Cloudinary failed (${this.cloudinaryFallbackCount}/${this.maxCloudinaryAttempts}), trying Python...`);
+    }
+
+    // Python fallback
+    console.log("🔄 Using Python backend upload (fallback)...");
     const formData = new FormData();
     formData.append("file", file);
-    return this.request<UploadResponse>("/upload", {
+    
+    const result = await this.request<UploadResponse>("/upload", {
       method: "POST",
       body: formData,
     });
+
+    if (result.success) {
+      console.log("✅ Python upload successful");
+      // Add source indicator
+      if (result.data) {
+        (result.data as any).source = "python";
+      }
+    }
+
+    return result;
   }
 
+  /**
+   * Process photo - Cloudinary primary, Python fallback
+   */
   async processPhoto(
     imageId: string,
     mode: ProcessingMode,
@@ -60,7 +104,33 @@ class ApiService {
     background: string = "white",
     cropData?: CropData
   ): Promise<ApiResponse<ProcessResponse>> {
-    return this.request<ProcessResponse>("/process", {
+    // Detect source from imageId
+    const isCloudinaryImage = !imageId.startsWith("img_");
+
+    // Try Cloudinary if image is from Cloudinary
+    if (this.cloudinaryEnabled && isCloudinaryImage && this.cloudinaryFallbackCount < this.maxCloudinaryAttempts) {
+      console.log("🎨 Attempting Cloudinary processing (primary)...");
+      
+      const cloudinaryResult = await cloudinaryService.processImage(
+        imageId,
+        mode,
+        enhanceLevel,
+        cropData
+      );
+      
+      if (cloudinaryResult.success) {
+        console.log("✅ Cloudinary processing successful");
+        this.cloudinaryFallbackCount = 0;
+        return cloudinaryResult as ApiResponse<ProcessResponse>;
+      }
+      
+      this.cloudinaryFallbackCount++;
+      console.warn(`⚠️ Cloudinary processing failed (${this.cloudinaryFallbackCount}/${this.maxCloudinaryAttempts}), trying Python...`);
+    }
+
+    // Python fallback
+    console.log("🔄 Using Python backend processing (fallback)...");
+    const result = await this.request<ProcessResponse>("/process", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -74,8 +144,18 @@ class ApiService {
         crop_data: cropData,
       }),
     });
+
+    if (result.success && result.data) {
+      console.log("✅ Python processing successful");
+      (result.data as any).source = "python";
+    }
+
+    return result;
   }
 
+  /**
+   * Adjust enhancement - Python only (Cloudinary doesn't support re-adjustment)
+   */
   async adjustEnhancement(
     imageId: string,
     strength: number
@@ -92,6 +172,9 @@ class ApiService {
     });
   }
 
+  /**
+   * Preview sheet - Works with both Cloudinary and Python images
+   */
   async previewSheet(
     imageId: string,
     layout: "3x4" | "2x3",
@@ -112,6 +195,9 @@ class ApiService {
     });
   }
 
+  /**
+   * Download sheet - Works with both sources
+   */
   async downloadSheet(
     imageId: string,
     layout: "3x4" | "2x3"
@@ -122,13 +208,7 @@ class ApiService {
     dimensions: string; 
     dpi: number 
   }>> {
-    return this.request<{ 
-      file: string; 
-      filename: string; 
-      size_bytes: number; 
-      dimensions: string; 
-      dpi: number 
-    }>("/download", {
+    return this.request("/download", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -141,7 +221,9 @@ class ApiService {
     });
   }
 
-  // ✅ ONLY print method needed - no printer listing!
+  /**
+   * Print sheet - Works with both sources
+   */
   async printSheet(
     imageId: string,
     layout: "3x4" | "2x3",
@@ -160,16 +242,37 @@ class ApiService {
       body: JSON.stringify({
         image_id: imageId,
         layout,
-        printer: null,  // ✅ Let backend auto-select
+        printer: null,
         copies,
       }),
     });
   }
 
+  /**
+   * Health check
+   */
   async healthCheck(): Promise<ApiResponse<{ status: string }>> {
     return this.request<{ status: string }>("/health", {
       method: "GET",
     });
+  }
+
+  /**
+   * Check Cloudinary quota
+   */
+  async checkCloudinaryQuota() {
+    return await cloudinaryService.checkQuota();
+  }
+
+  /**
+   * Get processing source info
+   */
+  getProcessingInfo() {
+    return {
+      cloudinaryEnabled: this.cloudinaryEnabled,
+      cloudinaryFallbackCount: this.cloudinaryFallbackCount,
+      usingPythonFallback: this.cloudinaryFallbackCount >= this.maxCloudinaryAttempts
+    };
   }
 }
 
