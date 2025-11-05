@@ -145,20 +145,6 @@ class ApiService {
     });
   }
 
-  async listPrinters(): Promise<ApiResponse<{
-    printers: Array<{
-      name: string;
-      is_default: boolean;
-      status: string;
-      supports_color: boolean;
-    }>;
-    default_printer: string | null;
-    os_type: string;
-  }>> {
-    return this.request("/printers", {
-      method: "GET",
-    });
-  }
 
   async printSheet(
     imageId: string,
