@@ -1,16 +1,8 @@
 import { useEffect, useState } from "react";
-import { ActionButtons } from "@/components/ActionButtons";
-import { CheckCircle, Printer, Settings } from "lucide-react";
+import { CheckCircle, Printer } from "lucide-react";
 import { apiService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface Step6PreviewProps {
   imageId: string;
@@ -36,38 +28,10 @@ const Step6Preview = ({
     orientation: string;
     type: string;
   } | null>(null);
-  
-  // Printer selection
-  const [showPrinterDialog, setShowPrinterDialog] = useState(false);
-  const [printers, setPrinters] = useState<any[]>([]);
-  const [selectedPrinter, setSelectedPrinter] = useState<string | null>(null);
-  const [printingAvailable, setPrintingAvailable] = useState(false);
 
   useEffect(() => {
     generateSheetPreview();
-    checkPrintingAvailability();
   }, [imageId, layout]);
-
-  const checkPrintingAvailability = async () => {
-    try {
-      const response = await apiService.listPrinters();
-      if (response.success && response.data) {
-        setPrintingAvailable(true);
-        setPrinters(response.data.printers);
-        
-        // Auto-select default printer
-        const defaultPrinter = response.data.printers.find(p => p.is_default);
-        if (defaultPrinter) {
-          setSelectedPrinter(defaultPrinter.name);
-        } else if (response.data.printers.length > 0) {
-          setSelectedPrinter(response.data.printers[0].name);
-        }
-      }
-    } catch (error) {
-      console.log("Printing not available on this system");
-      setPrintingAvailable(false);
-    }
-  };
 
   const generateSheetPreview = async () => {
     setIsGenerating(true);
@@ -82,7 +46,7 @@ const Step6Preview = ({
         
         toast({
           title: "✅ Preview ready",
-          description: `${response.data.layout_info.photos_count} photos arranged on ${response.data.layout_info.orientation} sheet`,
+          description: `${response.data.layout_info.photos_count} photos arranged`,
         });
       } else {
         throw new Error(response.error || "Preview generation failed");
@@ -100,41 +64,32 @@ const Step6Preview = ({
     }
   };
 
-  const handleDirectPrint = async () => {
-    if (!printingAvailable) {
-      toast({
-        title: "Printing not available",
-        description: "Please download and print manually",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  // ✅ SIMPLE: Just send print request to backend
+  const handlePrint = async () => {
     setIsPrinting(true);
 
     try {
       const apiLayout = layout === "standard" ? "3x4" : "2x3";
-      const response = await apiService.printSheet(
-        imageId,
-        apiLayout,
-        selectedPrinter || undefined,
-        1
-      );
+      const response = await apiService.printSheet(imageId, apiLayout, 1);
 
       if (response.success && response.data) {
         toast({
-          title: "🖨️ Printing...",
-          description: `Job sent to ${response.data.printer}`,
+          title: "✅ Print job sent",
+          description: `Printing to ${response.data.printer}`,
         });
-        
         onPrint();
       } else {
-        throw new Error(response.error || "Print failed");
+        // Backend returns error if no printer available
+        toast({
+          title: "❌ Print failed",
+          description: response.error || "No printer available. Please download and print manually.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Print error:", error);
       toast({
-        title: "Print failed",
+        title: "❌ Print failed",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
@@ -143,12 +98,13 @@ const Step6Preview = ({
     }
   };
 
-  const handleDownloadAndPrint = async () => {
+  const handleDownload = async () => {
     try {
       const apiLayout = layout === "standard" ? "3x4" : "2x3";
       const response = await apiService.downloadSheet(imageId, apiLayout);
       
       if (response.success && response.data) {
+        // Open print dialog with downloaded sheet
         const printWindow = window.open("", "_blank");
         if (printWindow) {
           const paperWidth = layout === "standard" ? "6in" : "4in";
@@ -211,11 +167,9 @@ const Step6Preview = ({
         }
         
         toast({
-          title: "Opening print dialog...",
-          description: "Check your browser's print dialog",
+          title: "✅ Opening print dialog",
+          description: "Print dialog opened in new window",
         });
-      } else {
-        throw new Error(response.error || "Download failed");
       }
     } catch (error) {
       console.error("Download error:", error);
@@ -225,8 +179,6 @@ const Step6Preview = ({
         variant: "destructive",
       });
     }
-    
-    onPrint();
   };
 
   const getLayoutDescription = () => {
@@ -269,9 +221,7 @@ const Step6Preview = ({
               src={sheetPreview}
               alt="Print sheet preview"
               className="w-full h-auto"
-              style={{
-                imageRendering: 'high-quality'
-              }}
+              style={{ imageRendering: 'high-quality' }}
             />
           ) : null}
         </div>
@@ -300,32 +250,6 @@ const Step6Preview = ({
           <p className="text-sm text-muted-foreground">DPI quality</p>
         </div>
       </div>
-
-      {/* Printing Options */}
-      {printingAvailable && (
-        <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 border border-blue-200 dark:border-blue-800 max-w-2xl mx-auto">
-          <div className="flex items-start gap-3">
-            <Printer className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-1 text-sm">
-                Direct Printing Available
-              </h3>
-              <p className="text-xs text-muted-foreground mb-2">
-                {selectedPrinter ? `Selected: ${selectedPrinter}` : "No printer selected"}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPrinterDialog(true)}
-                className="gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Select Printer ({printers.length} available)
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Layout Specific Info */}
       {layout === "standard" ? (
@@ -372,41 +296,28 @@ const Step6Preview = ({
         </ul>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - SIMPLE! */}
       <div className="max-w-2xl mx-auto space-y-3">
-        {printingAvailable ? (
-          <>
-            <Button
-              onClick={handleDirectPrint}
-              disabled={isGenerating || isPrinting || !selectedPrinter}
-              className="w-full gap-2"
-              size="lg"
-            >
-              <Printer className="w-5 h-5" />
-              {isPrinting ? "Sending to Printer..." : "Print Now"}
-            </Button>
-            <Button
-              onClick={handleDownloadAndPrint}
-              disabled={isGenerating}
-              variant="outline"
-              className="w-full gap-2"
-              size="lg"
-            >
-              <Printer className="w-5 h-5" />
-              Download & Print (Browser)
-            </Button>
-          </>
-        ) : (
-          <Button
-            onClick={handleDownloadAndPrint}
-            disabled={isGenerating}
-            className="w-full gap-2"
-            size="lg"
-          >
-            <Printer className="w-5 h-5" />
-            Open Print Dialog
-          </Button>
-        )}
+        <Button
+          onClick={handlePrint}
+          disabled={isGenerating || isPrinting}
+          className="w-full gap-2"
+          size="lg"
+        >
+          <Printer className="w-5 h-5" />
+          {isPrinting ? "Sending to Printer..." : "Print Photo Sheet"}
+        </Button>
+        
+        <Button
+          onClick={handleDownload}
+          disabled={isGenerating}
+          variant="outline"
+          className="w-full gap-2"
+          size="lg"
+        >
+          <Printer className="w-5 h-5" />
+          Download & Print Manually
+        </Button>
         
         <Button
           onClick={onBack}
@@ -425,55 +336,6 @@ const Step6Preview = ({
           Photo processing complete
         </div>
       </div>
-
-      {/* Printer Selection Dialog */}
-      <Dialog open={showPrinterDialog} onOpenChange={setShowPrinterDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Select Printer</DialogTitle>
-            <DialogDescription>
-              Choose which printer to use for this job
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-2">
-            {printers.map((printer) => (
-              <button
-                key={printer.name}
-                onClick={() => {
-                  setSelectedPrinter(printer.name);
-                  setShowPrinterDialog(false);
-                  toast({
-                    title: "Printer selected",
-                    description: printer.name,
-                  });
-                }}
-                className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                  selectedPrinter === printer.name
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-semibold text-foreground">
-                      {printer.name}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Status: {printer.status}
-                      {printer.is_default && " • Default"}
-                      {printer.supports_color && " • Color"}
-                    </div>
-                  </div>
-                  {selectedPrinter === printer.name && (
-                    <CheckCircle className="w-5 h-5 text-primary" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
