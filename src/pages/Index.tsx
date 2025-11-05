@@ -23,6 +23,9 @@ const Index = () => {
   const [cropData, setCropData] = useState<CropData | null>(null);
   const [selectedLayout, setSelectedLayout] = useState<"standard" | "custom">("standard");
 
+  // ADDED: Track the processed image ID separately
+  const [processedImageId, setProcessedImageId] = useState<string | undefined>(undefined);
+
   const totalSteps = 6;
 
   const handleNext = () => {
@@ -38,6 +41,7 @@ const Index = () => {
   };
 
   const handleRetake = () => {
+    console.log("🔄 Retaking photo, resetting all state");
     setCurrentStep(1);
     setPhotoData({
       original: null,
@@ -48,26 +52,48 @@ const Index = () => {
     });
     setCropData(null);
     setSelectedLayout("standard");
+    setProcessedImageId(undefined);
   };
 
   const handleUploadComplete = (imageUrl: string, imageId: string) => {
+    console.log("📤 Upload complete:");
+    console.log(`   Image ID: ${imageId}`);
+    console.log(`   Image URL: ${imageUrl.substring(0, 50)}...`);
+    
     setPhotoData({ ...photoData, original: imageUrl, imageId });
     handleNext();
   };
 
   const handleCropComplete = (croppedImage: string, cropCoords: CropData) => {
+    console.log("✂️ Crop complete:");
+    console.log(`   Crop data:`, cropCoords);
+    
     setPhotoData({ ...photoData, cropped: croppedImage });
     setCropData(cropCoords);
     handleNext();
   };
 
   const handleLayoutSelect = (layout: "standard" | "custom") => {
+    console.log(`📐 Layout selected: ${layout}`);
     setSelectedLayout(layout);
     handleNext();
   };
 
-  const handleProcessingComplete = (processedImage: string) => {
-    setPhotoData({ ...photoData, processed: processedImage });
+  const handleProcessingComplete = (beforeImage: string, afterImage: string, newProcessedImageId: string) => {
+    console.log("✅ Processing complete:");
+    console.log(`   Original ID: ${photoData.imageId}`);
+    console.log(`   Processed ID: ${newProcessedImageId}`);
+    console.log(`   Before image: ${beforeImage.substring(0, 50)}...`);
+    console.log(`   After image: ${afterImage.substring(0, 50)}...`);
+    
+    // CRITICAL FIX: Update both the processed image AND the processed ID
+    setPhotoData({ 
+      ...photoData, 
+      processed: afterImage,
+      cropped: beforeImage // Store before image as cropped for comparison
+    });
+    setProcessedImageId(newProcessedImageId);
+    
     handleNext();
   };
 
@@ -82,6 +108,7 @@ const Index = () => {
     switch (currentStep) {
       case 1:
         return <Step1Upload onUploadComplete={handleUploadComplete} />;
+      
       case 2:
         return (
           <Step2Crop
@@ -90,6 +117,7 @@ const Index = () => {
             onCropComplete={handleCropComplete}
           />
         );
+      
       case 3:
         return (
           <Step3Layout
@@ -97,6 +125,7 @@ const Index = () => {
             onLayoutSelect={handleLayoutSelect}
           />
         );
+      
       case 4:
         return (
           <Step4Processing
@@ -106,6 +135,7 @@ const Index = () => {
             onProcessingComplete={handleProcessingComplete}
           />
         );
+      
       case 5:
         return (
           <Step5BeforeAfter
@@ -115,15 +145,21 @@ const Index = () => {
             onRetake={handleRetake}
           />
         );
+      
       case 6:
+        // CRITICAL FIX: Use processedImageId for final step
+        const imageIdForPrint = processedImageId || photoData.imageId!;
+        console.log(`📄 Final step using image ID: ${imageIdForPrint}`);
+        
         return (
           <Step6Final
-            imageId={photoData.imageId!}
+            imageId={imageIdForPrint}
             layout={selectedLayout}
             onPrint={handlePrint}
             onRetake={handleRetake}
           />
         );
+      
       default:
         return null;
     }
