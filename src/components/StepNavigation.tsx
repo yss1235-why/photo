@@ -9,19 +9,19 @@ interface StepNavigationProps {
   mode: ProcessingMode;
 }
 
-const getStepLabel = (step: number, mode: ProcessingMode): string => {
+const getStepLabel = (step: number): string => {
   const labels: { [key: number]: string } = {
     1: "Upload Photo",
-    2: "Select Mode",
-    3: "Crop Image",
-    4: "Enhancement",
-    5: mode === "passport" ? "Choose Layout" : "Choose Layout",
-    6: "Final Preview",
+    2: "Crop Image",
+    3: "Choose Layout",
+    4: "Processing",
+    5: "Compare Results",
+    6: "Print Preview",
   };
   return labels[step] || "";
 };
 
-const StepNavigation = ({ currentStep, totalSteps, onBack, mode }: StepNavigationProps) => {
+const StepNavigation = ({ currentStep, totalSteps, onBack }: StepNavigationProps) => {
   const progress = (currentStep / totalSteps) * 100;
 
   return (
@@ -42,10 +42,10 @@ const StepNavigation = ({ currentStep, totalSteps, onBack, mode }: StepNavigatio
               Step {currentStep} of {totalSteps}
             </p>
             <p className="text-sm md:text-base font-semibold text-foreground">
-              {getStepLabel(currentStep, mode)}
+              {getStepLabel(currentStep)}
             </p>
           </div>
-          <div className="w-[60px] md:w-[80px]" /> {/* Spacer for balance */}
+          <div className="w-[60px] md:w-[80px]" />
         </div>
         
         {/* Progress Bar */}
