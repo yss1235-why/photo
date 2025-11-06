@@ -11,6 +11,7 @@ interface CropToolProps {
 export const CropTool = ({ imageUrl, onCropChange }: CropToolProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
+  const cropBoxRef = useRef<HTMLDivElement>(null);
   
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -28,7 +29,7 @@ export const CropTool = ({ imageUrl, onCropChange }: CropToolProps) => {
   }, [zoom, position, imageLoaded, naturalDimensions]);
 
   const updateCropData = () => {
-    if (!containerRef.current || !imageRef.current) return;
+    if (!containerRef.current || !imageRef.current || !cropBoxRef.current) return;
 
     const container = containerRef.current.getBoundingClientRect();
     const image = imageRef.current;
@@ -36,8 +37,10 @@ export const CropTool = ({ imageUrl, onCropChange }: CropToolProps) => {
     const displayWidth = image.offsetWidth;
     const displayHeight = image.offsetHeight;
     
-    const cropHeight = container.height * 0.7;
-    const cropWidth = cropHeight * CROP_ASPECT_RATIO;
+    // ✅ FIX: Get actual crop box dimensions from the rendered element
+    const cropBox = cropBoxRef.current;
+    const cropWidth = cropBox.offsetWidth;
+    const cropHeight = cropBox.offsetHeight;
     
     const containerCenterX = container.width / 2;
     const containerCenterY = container.height / 2;
@@ -178,6 +181,7 @@ export const CropTool = ({ imageUrl, onCropChange }: CropToolProps) => {
           <div className="absolute inset-0 bg-black/40" />
           
           <div 
+            ref={cropBoxRef}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-primary bg-transparent shadow-lg"
             style={{
               width: `${Math.min(280, containerRef.current?.clientWidth ? containerRef.current.clientWidth * 0.7 : 280)}px`,
