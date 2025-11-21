@@ -1,4 +1,4 @@
-// src/services/api.ts - Hybrid Cloudinary + Python Service
+// src/services/api.ts - Complete API Service with Passport and Polaroid Support
 
 import { 
   ApiResponse, 
@@ -50,6 +50,10 @@ class ApiService {
       };
     }
   }
+
+  // ==========================================
+  // PASSPORT PHOTO ENDPOINTS
+  // ==========================================
 
   /**
    * Upload photo - Cloudinary primary, Python fallback
@@ -192,13 +196,8 @@ class ApiService {
   async printSheet(
     imageId: string,
     layout: "3x4" | "2x3",
-    copies: number = 1
-  ): Promise<ApiResponse<{ 
-    job_id: string; 
-    printer: string; 
-    message: string;
-    settings: any;
-  }>> {
+    printerName?: string
+  ): Promise<ApiResponse<{ status: string; message: string }>> {
     return this.request("/print", {
       method: "POST",
       headers: {
@@ -207,8 +206,7 @@ class ApiService {
       body: JSON.stringify({
         image_id: imageId,
         layout,
-        printer: null,
-        copies,
+        printer_name: printerName,
       }),
     });
   }
@@ -217,27 +215,109 @@ class ApiService {
    * Health check
    */
   async healthCheck(): Promise<ApiResponse<{ status: string }>> {
-    return this.request<{ status: string }>("/health", {
-      method: "GET",
+    return this.request("/health");
+  }
+
+  // ==========================================
+  // POLAROID PHOTO ENDPOINTS
+  // ==========================================
+
+  /**
+   * Upload photo for polaroid processing
+   */
+  async uploadPolaroidPhoto(file: File): Promise<ApiResponse<UploadResponse>> {
+    console.log("📤 Uploading photo for polaroid...");
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    const result = await this.request<UploadResponse>("/polaroid/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (result.success && result.data) {
+      (result.data as any).type = "polaroid";
+    }
+
+    return result;
+  }
+
+  /**
+   * Process photo with cropping (no BG removal for polaroid)
+   */
+  async processPolaroidPhoto(
+    imageId: string,
+    cropData?: CropData
+  ): Promise<ApiResponse<ProcessResponse>> {
+    console.log("🎨 Processing polaroid photo...");
+    
+    return this.request<ProcessResponse>("/polaroid/process", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_id: imageId,
+        crop_data: cropData,
+      }),
     });
   }
 
   /**
-   * Check Cloudinary quota
+   * Preview polaroid sheet with text
    */
-  async checkCloudinaryQuota() {
-    return await cloudinaryService.checkQuota();
+  async previewPolaroidSheet(
+    imageId: string,
+    text1: string = "",
+    text2: string = "",
+    fontName: string = "default"
+  ): Promise<ApiResponse<SheetPreviewResponse>> {
+    console.log("📋 Generating polaroid sheet preview...");
+    
+    return this.request<SheetPreviewResponse>("/polaroid/preview-sheet", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_id: imageId,
+        text1,
+        text2,
+        font_name: fontName,
+      }),
+    });
   }
 
   /**
-   * Get processing source info
+   * Download final polaroid sheet
    */
-  getProcessingInfo() {
-    return {
-      cloudinaryEnabled: this.cloudinaryEnabled,
-      cloudinaryFallbackCount: this.cloudinaryFallbackCount,
-      usingPythonFallback: this.cloudinaryFallbackCount >= this.maxCloudinaryAttempts
-    };
+  async downloadPolaroidSheet(
+    imageId: string,
+    text1: string = "",
+    text2: string = "",
+    fontName: string = "default"
+  ): Promise<ApiResponse<{
+    file: string;
+    filename: string;
+    size_bytes: number;
+    dimensions: string;
+    dpi: number;
+  }>> {
+    console.log("📥 Downloading polaroid sheet...");
+    
+    return this.request("/polaroid/download", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_id: imageId,
+        text1,
+        text2,
+        font_name: fontName,
+      }),
+    });
   }
 }
 
