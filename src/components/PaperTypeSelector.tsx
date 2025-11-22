@@ -1,11 +1,11 @@
-// src/components/PaperTypeSelector.tsx - Complete Paper Type Selection Component
+// src/components/PaperTypeSelector.tsx - Simplified Paper Type Selection
 
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { FileImage, Image as ImageIcon, Camera, Check } from "lucide-react";
+import { FileImage, Camera, Check } from "lucide-react";
 import { PaperType, PAPER_TYPE_OPTIONS } from "@/types";
 
 interface PaperTypeSelectorProps {
@@ -16,10 +16,8 @@ interface PaperTypeSelectorProps {
 
 const getIconForType = (type: PaperType) => {
   switch (type) {
-    case "passport-standard":
+    case "passport":
       return <FileImage className="w-6 h-6" />;
-    case "passport-custom":
-      return <ImageIcon className="w-6 h-6" />;
     case "polaroid":
       return <Camera className="w-6 h-6" />;
     default:
@@ -29,10 +27,8 @@ const getIconForType = (type: PaperType) => {
 
 const getColorForType = (type: PaperType) => {
   switch (type) {
-    case "passport-standard":
+    case "passport":
       return "from-blue-500 to-blue-600";
-    case "passport-custom":
-      return "from-green-500 to-green-600";
     case "polaroid":
       return "from-purple-500 to-purple-600";
     default:
@@ -51,9 +47,9 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
     <Card className="p-8 max-w-3xl mx-auto">
       <div className="space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">Select Paper Type</h2>
+          <h2 className="text-3xl font-bold">Select Photo Type</h2>
           <p className="text-muted-foreground text-lg">
-            Choose the type of photo layout you want to create
+            Choose the type of photo you want to create
           </p>
         </div>
 
@@ -80,40 +76,35 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
                     flex items-start gap-4 rounded-xl border-2 p-5 cursor-pointer
                     transition-all duration-200 hover:shadow-md
                     ${isSelected 
-                      ? "border-primary bg-primary/5 shadow-lg" 
-                      : "border-muted bg-background hover:border-primary/50"
+                      ? 'border-primary bg-primary/5 shadow-md' 
+                      : 'border-border hover:border-primary/50'
                     }
                   `}
                 >
+                  {/* Icon */}
                   <div className={`
                     shrink-0 w-12 h-12 rounded-lg flex items-center justify-center
-                    bg-gradient-to-br ${gradientClass} text-white shadow-sm
+                    bg-gradient-to-br ${gradientClass} text-white
                   `}>
                     <Icon />
                   </div>
-                  
-                  <div className="flex-1 space-y-2">
+
+                  {/* Content */}
+                  <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <div className="font-bold text-lg">{option.label}</div>
+                      <h3 className="text-lg font-semibold">{option.label}</h3>
                       {isSelected && (
                         <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                           <Check className="w-4 h-4 text-primary-foreground" />
                         </div>
                       )}
                     </div>
-                    <div className="text-sm text-muted-foreground leading-relaxed">
+                    <p className="text-sm text-muted-foreground">
                       {option.description}
-                    </div>
-                    <div className="flex gap-4 text-sm font-medium pt-1">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-                        <span>Size: {option.size}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-                        <span>Count: {option.count} photos</span>
-                      </div>
-                    </div>
+                    </p>
+                    <p className="text-xs text-muted-foreground/70">
+                      {option.details}
+                    </p>
                   </div>
                 </Label>
               </div>
@@ -121,7 +112,7 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
           })}
         </RadioGroup>
 
-        {/* Special Feature Highlights */}
+        {/* Info Box for Selected Type */}
         {selectedType === "polaroid" && (
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-5">
             <div className="flex gap-3">
@@ -132,7 +123,7 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
               </div>
               <div className="space-y-1">
                 <p className="font-semibold text-purple-900">
-                  Polaroid Feature Highlights
+                  Polaroid Photos
                 </p>
                 <ul className="text-sm text-purple-800 space-y-1">
                   <li>• Nostalgic polaroid-style photos with white borders</li>
@@ -145,7 +136,7 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
           </div>
         )}
 
-        {selectedType === "passport-standard" && (
+        {selectedType === "passport" && (
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-5">
             <div className="flex gap-3">
               <div className="shrink-0">
@@ -155,32 +146,11 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
               </div>
               <div className="space-y-1">
                 <p className="font-semibold text-blue-900">
-                  Standard Passport Photos
+                  Passport Printing
                 </p>
                 <p className="text-sm text-blue-800">
                   Professional passport photos with automatic face detection, background removal, 
-                  and color correction. Get 8 photos on a 6×4 inch sheet.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {selectedType === "passport-custom" && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5">
-            <div className="flex gap-3">
-              <div className="shrink-0">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <ImageIcon className="w-5 h-5 text-green-600" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="font-semibold text-green-900">
-                  Custom Passport Layout
-                </p>
-                <p className="text-sm text-green-800">
-                  More photos on a portrait layout. Perfect for visa applications and ID photos. 
-                  Get 12 photos on a 4×6 inch sheet.
+                  and color correction. You'll choose your layout in the next step (8 or 12 photos).
                 </p>
               </div>
             </div>
