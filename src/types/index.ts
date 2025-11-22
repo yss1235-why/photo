@@ -86,6 +86,7 @@ export interface PolaroidProcessResponse {
 export interface PolaroidPreviewResponse {
   status: string;
   preview: string;
+  preview_sheet?: string;
   dimensions: string;
   dpi: number;
   type: "polaroid";
@@ -136,46 +137,44 @@ export const AVAILABLE_FONTS: FontOption[] = [
 ];
 
 // ==========================================
-// PAPER TYPE CONFIGURATION
+// PAPER TYPE CONFIGURATION (UPDATED - SIMPLIFIED)
 // ==========================================
 
-export type PaperType = "passport-standard" | "passport-custom" | "polaroid";
+export type PaperType = "passport" | "polaroid";
 
 export interface PaperTypeOption {
   value: PaperType;
   label: string;
   description: string;
-  size: string;
-  count: number;
+  details: string;
 }
 
 export const PAPER_TYPE_OPTIONS: PaperTypeOption[] = [
   {
-    value: "passport-standard",
-    label: "Passport Standard",
-    description: "Standard passport photo layout",
-    size: "6×4 inches",
-    count: 8,
-  },
-  {
-    value: "passport-custom",
-    label: "Passport Custom",
-    description: "Custom passport photo layout",
-    size: "4×6 inches",
-    count: 12,
+    value: "passport",
+    label: "Passport Printing",
+    description: "Professional passport photos with background removal",
+    details: "Choose your layout: 8 photos (landscape) or 12 photos (portrait)",
   },
   {
     value: "polaroid",
     label: "Polaroid",
-    description: "Two polaroid photos with custom text",
-    size: "6×4 inches",
-    count: 2,
+    description: "Nostalgic polaroid-style photos with custom text",
+    details: "2 polaroid photos with white borders and personalized captions",
   },
 ];
 
 // ==========================================
 // UI STATE TYPES
 // ==========================================
+
+export interface PhotoData {
+  original: string | null;
+  processed: string | null;
+  cropped: string | null;
+  final: string | null;
+  imageId?: string;
+}
 
 export type WorkflowStep = "upload" | "crop" | "text" | "preview";
 
