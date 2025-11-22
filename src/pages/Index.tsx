@@ -39,7 +39,7 @@ const Index = () => {
   const [polaroidPreviewImage, setPolaroidPreviewImage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
