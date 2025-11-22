@@ -1,383 +1,195 @@
-import { useState } from "react";
-import { Camera } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import Step1Upload from "@/components/steps/Step1Upload";
-import Step2Crop from "@/components/steps/Step2Crop";
-import Step3Layout from "@/components/steps/Step3Layout";
-import Step4Processing from "@/components/steps/Step4Processing";
-import Step5BeforeAfter from "@/components/steps/Step5BeforeAfter";
-import Step6Final from "@/components/steps/Step6Final";
-import StepNavigation from "@/components/StepNavigation";
-import { PaperTypeSelector } from "@/components/PaperTypeSelector";
-import { PolaroidCropper } from "@/components/PolaroidCropper";
-import { TextCustomization } from "@/components/TextCustomization";
-import { PolaroidPreview } from "@/components/PolaroidPreview";
-import { PhotoData, CropData, PaperType } from "@/types";
-import { apiService } from "@/services/api";
+// src/types/index.ts - Complete Type Definitions
 
-const Index = () => {
-  const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [photoData, setPhotoData] = useState<PhotoData>({
-    original: null,
-    processed: null,
-    cropped: null,
-    final: null,
-    imageId: undefined,
-  });
-  const [cropData, setCropData] = useState<CropData | null>(null);
-  const [selectedLayout, setSelectedLayout] = useState<"standard" | "custom">("standard");
-  const [processedImageId, setProcessedImageId] = useState<string | undefined>(undefined);
-  
-  // Paper type selection state (UPDATED - simplified to passport or polaroid)
-  const [selectedPaperType, setSelectedPaperType] = useState<PaperType>("passport");
-  
-  // Polaroid-specific state
-  const [polaroidText1, setPolaroidText1] = useState<string>("");
-  const [polaroidText2, setPolaroidText2] = useState<string>("");
-  const [polaroidFont, setPolaroidFont] = useState<string>("default");
-  const [polaroidPreviewImage, setPolaroidPreviewImage] = useState<string>("");
-  const [isProcessing, setIsProcessing] = useState(false);
+// ==========================================
+// COMMON TYPES
+// ==========================================
 
-  const totalSteps = 6;
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
-  const handleNext = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
+export interface CropData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  naturalWidth: number;
+  naturalHeight: number;
+  zoom: number;
+}
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+// ==========================================
+// PASSPORT PHOTO TYPES
+// ==========================================
 
-  const handleRetake = () => {
-    console.log("🔄 Retaking photo, resetting all state");
-    setCurrentStep(1);
-    setPhotoData({
-      original: null,
-      processed: null,
-      cropped: null,
-      final: null,
-      imageId: undefined,
-    });
-    setCropData(null);
-    setSelectedLayout("standard");
-    setProcessedImageId(undefined);
-    setSelectedPaperType("passport");
-    setPolaroidText1("");
-    setPolaroidText2("");
-    setPolaroidFont("default");
-    setPolaroidPreviewImage("");
-  };
+export interface UploadResponse {
+  status: string;
+  image_id: string;
+  face_detected?: boolean;
+  face_confidence?: number;
+  landmarks_detected?: boolean;
+  dimensions: [number, number];
+  source?: "cloudinary" | "python";
+}
 
-  const handleUploadComplete = (imageUrl: string, imageId: string) => {
-    console.log("📤 Upload complete:");
-    console.log(`   Image ID: ${imageId}`);
-    console.log(`   Image URL: ${imageUrl.substring(0, 50)}...`);
-    
-    setPhotoData({ ...photoData, original: imageUrl, imageId });
-    handleNext(); // Go to step 2: Paper Type Selection
-  };
+export interface ProcessResponse {
+  status: string;
+  image_id: string;
+  before_image?: string;
+  after_image?: string;
+  processed_image: string;
+  face_confidence?: number;
+  bg_removed?: boolean;
+  source?: "cloudinary" | "python";
+}
 
-  // Handle paper type selection (UPDATED)
-  const handlePaperTypeSelect = (paperType: PaperType) => {
-    console.log("📋 Paper type selected:", paperType);
-    setSelectedPaperType(paperType);
-    
-    // For passport type, set default layout
-    if (paperType === "passport") {
-      setSelectedLayout("standard");
-    }
-  };
+export interface SheetPreviewResponse {
+  status: string;
+  preview: string;
+  dimensions: string;
+  dpi: number;
+}
 
-  const handlePaperTypeContinue = () => {
-    console.log("➡️ Continuing with paper type:", selectedPaperType);
-    handleNext(); // Go to step 3: Crop
-  };
+export interface DownloadResponse {
+  file: string;
+  filename: string;
+  size_bytes: number;
+  dimensions: string;
+  dpi: number;
+}
 
-  const handleCropComplete = (croppedImage: string, cropCoords: CropData) => {
-    console.log("✂️ Crop complete:");
-    console.log(`   Crop data:`, cropCoords);
-    
-    setPhotoData({ ...photoData, cropped: croppedImage });
-    setCropData(cropCoords);
-    handleNext();
-  };
+export interface PrintResponse {
+  status: string;
+  message: string;
+}
 
-  // Handle polaroid crop complete
-  const handlePolaroidCropComplete = async (cropCoords: CropData) => {
-    console.log("✂️ Polaroid crop complete:", cropCoords);
-    setCropData(cropCoords);
-    setIsProcessing(true);
+// ==========================================
+// POLAROID PHOTO TYPES
+// ==========================================
 
-    try {
-      const result = await apiService.processPolaroidPhoto(photoData.imageId!, cropCoords);
-      
-      if (result.success && result.data) {
-        setPhotoData({ ...photoData, processed: result.data.processed_image });
-        handleNext(); // Go to text customization
-        toast({
-          title: "Crop Applied",
-          description: "Now add custom text to your polaroids",
-        });
-      } else {
-        throw new Error(result.error || "Processing failed");
-      }
-    } catch (error) {
-      toast({
-        title: "Processing Failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+export interface PolaroidUploadResponse {
+  status: string;
+  image_id: string;
+  dimensions: [number, number];
+  type: "polaroid";
+}
 
-  // Handle text customization complete
-  const handleTextCustomizationComplete = async (text1: string, text2: string, fontName: string) => {
-    console.log("📝 Text customization complete:", { text1, text2, fontName });
-    setPolaroidText1(text1);
-    setPolaroidText2(text2);
-    setPolaroidFont(fontName);
-    setIsProcessing(true);
+export interface PolaroidProcessResponse {
+  status: string;
+  image_id: string;
+  processed_image: string;
+  type: "polaroid";
+}
 
-    try {
-      const result = await apiService.previewPolaroidSheet(photoData.imageId!, text1, text2, fontName);
-      
-      if (result.success && result.data) {
-        setPolaroidPreviewImage(result.data.preview_sheet || result.data.preview);
-        handleNext(); // Go to preview
-        toast({
-          title: "Preview Ready",
-          description: "Your polaroid sheet is ready to download",
-        });
-      } else {
-        throw new Error(result.error || "Preview generation failed");
-      }
-    } catch (error) {
-      toast({
-        title: "Preview Failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+export interface PolaroidPreviewResponse {
+  status: string;
+  preview: string;
+  preview_sheet?: string;
+  dimensions: string;
+  dpi: number;
+  type: "polaroid";
+}
 
-  // Handle polaroid download
-  const handlePolaroidDownload = async () => {
-    try {
-      const result = await apiService.downloadPolaroidSheet(
-        photoData.imageId!,
-        polaroidText1,
-        polaroidText2,
-        polaroidFont
-      );
+export interface PolaroidDownloadResponse {
+  status: string;
+  file: string;
+  filename: string;
+  size_bytes: number;
+  dimensions: string;
+  dpi: number;
+  type: "polaroid";
+}
 
-      if (result.success && result.data) {
-        const link = document.createElement("a");
-        link.href = result.data.file;
-        link.download = result.data.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+export interface PolaroidCropData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  naturalWidth: number;
+  naturalHeight: number;
+  zoom: number;
+}
 
-        toast({
-          title: "Download Started",
-          description: `Downloading ${result.data.filename}`,
-        });
-      } else {
-        throw new Error(result.error || "Download failed");
-      }
-    } catch (error) {
-      toast({
-        title: "Download Failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
-    }
-  };
+// ==========================================
+// FONT TYPES
+// ==========================================
 
-  const handleLayoutSelect = (layout: "standard" | "custom") => {
-    console.log("📐 Layout selected:", layout);
-    setSelectedLayout(layout);
-    handleNext();
-  };
+export interface FontOption {
+  name: string;
+  displayName: string;
+  preview: string;
+}
 
-  const handleProcessingComplete = (beforeImage: string, afterImage: string, processedId: string) => {
-    console.log("✅ Processing complete:");
-    console.log(`   Processed ID: ${processedId}`);
-    console.log(`   Before image available: ${!!beforeImage}`);
-    console.log(`   After image available: ${!!afterImage}`);
-    
-    setPhotoData({ 
-      ...photoData, 
-      processed: afterImage,
-      cropped: beforeImage 
-    });
-    setProcessedImageId(processedId);
-    handleNext();
-  };
+export const AVAILABLE_FONTS: FontOption[] = [
+  { name: "default", displayName: "Default", preview: "The quick brown fox" },
+  { name: "handwriting_01", displayName: "Handwriting 1", preview: "The quick brown fox" },
+  { name: "handwriting_02", displayName: "Handwriting 2", preview: "The quick brown fox" },
+  { name: "script_01", displayName: "Script 1", preview: "The quick brown fox" },
+  { name: "script_02", displayName: "Script 2", preview: "The quick brown fox" },
+  { name: "elegant_01", displayName: "Elegant", preview: "The quick brown fox" },
+  { name: "playful_01", displayName: "Playful", preview: "The quick brown fox" },
+  { name: "vintage_01", displayName: "Vintage", preview: "The quick brown fox" },
+  { name: "modern_01", displayName: "Modern", preview: "The quick brown fox" },
+  { name: "casual_01", displayName: "Casual", preview: "The quick brown fox" },
+  { name: "artistic_01", displayName: "Artistic", preview: "The quick brown fox" },
+];
 
-  const renderStep = () => {
-    // For polaroid workflow
-    if (selectedPaperType === "polaroid") {
-      switch (currentStep) {
-        case 1:
-          return (
-            <Step1Upload
-              onUploadComplete={handleUploadComplete}
-              onRetake={handleRetake}
-            />
-          );
-        
-        case 2:
-          return (
-            <PaperTypeSelector
-              selectedType={selectedPaperType}
-              onSelect={handlePaperTypeSelect}
-              onContinue={handlePaperTypeContinue}
-            />
-          );
-        
-        case 3:
-          return (
-            <PolaroidCropper
-              imageUrl={photoData.original!}
-              onCropComplete={handlePolaroidCropComplete}
-              onCancel={handleRetake}
-            />
-          );
-        
-        case 4:
-          return (
-            <TextCustomization
-              onComplete={handleTextCustomizationComplete}
-              onBack={handleBack}
-              initialText1={polaroidText1}
-              initialText2={polaroidText2}
-              initialFont={polaroidFont}
-            />
-          );
-        
-        case 5:
-        case 6:
-          return (
-            <PolaroidPreview
-              previewImage={polaroidPreviewImage}
-              isGenerating={isProcessing}
-              onDownload={handlePolaroidDownload}
-              onEdit={() => setCurrentStep(4)}
-              onRetake={handleRetake}
-            />
-          );
-        
-        default:
-          return null;
-      }
-    }
+// ==========================================
+// PAPER TYPE CONFIGURATION (UPDATED - SIMPLIFIED)
+// ==========================================
 
-    // For passport workflow
-    switch (currentStep) {
-      case 1:
-        return (
-          <Step1Upload
-            onUploadComplete={handleUploadComplete}
-            onRetake={handleRetake}
-          />
-        );
-      
-      case 2:
-        return (
-          <PaperTypeSelector
-            selectedType={selectedPaperType}
-            onSelect={handlePaperTypeSelect}
-            onContinue={handlePaperTypeContinue}
-          />
-        );
-      
-      case 3:
-        return (
-          <Step2Crop
-            imageUrl={photoData.original!}
-            onCropComplete={handleCropComplete}
-            onRetake={handleRetake}
-          />
-        );
-      
-      case 4:
-        return (
-          <Step3Layout
-            selectedLayout={selectedLayout}
-            onLayoutSelect={handleLayoutSelect}
-          />
-        );
-      
-      case 5:
-        return (
-          <Step4Processing
-            originalImage={photoData.original!}
-            imageId={photoData.imageId!}
-            cropData={cropData}
-            onProcessingComplete={handleProcessingComplete}
-          />
-        );
-      
-      case 6:
-        return (
-          <Step5BeforeAfter
-            originalImage={photoData.cropped || photoData.original!}
-            processedImage={photoData.processed!}
-            onContinue={handleNext}
-            onRetake={handleRetake}
-          />
-        );
-      
-      case 7:
-        const imageIdForPrint = processedImageId || photoData.imageId!;
-        return (
-          <Step6Final
-            imageId={imageIdForPrint}
-            layout={selectedLayout}
-            onRetake={handleRetake}
-          />
-        );
-      
-      default:
-        return null;
-    }
-  };
+export type PaperType = "passport" | "polaroid";
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <Camera className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Passport Photo Studio
-              </h1>
-            </div>
-            <StepNavigation currentStep={currentStep} totalSteps={totalSteps} />
-          </div>
-        </div>
-      </header>
+export interface PaperTypeOption {
+  value: PaperType;
+  label: string;
+  description: string;
+  details: string;
+}
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {renderStep()}
-      </main>
-    </div>
-  );
-};
+export const PAPER_TYPE_OPTIONS: PaperTypeOption[] = [
+  {
+    value: "passport",
+    label: "Passport Printing",
+    description: "Professional passport photos with background removal",
+    details: "Choose your layout: 8 photos (landscape) or 12 photos (portrait)",
+  },
+  {
+    value: "polaroid",
+    label: "Polaroid",
+    description: "Nostalgic polaroid-style photos with custom text",
+    details: "2 polaroid photos with white borders and personalized captions",
+  },
+];
 
-export default Index;
+// ==========================================
+// UI STATE TYPES
+// ==========================================
+
+export interface PhotoData {
+  original: string | null;
+  processed: string | null;
+  cropped: string | null;
+  final: string | null;
+  imageId?: string;
+}
+
+export type WorkflowStep = "upload" | "crop" | "text" | "preview";
+
+export interface WorkflowState {
+  step: WorkflowStep;
+  imageFile: File | null;
+  imageUrl: string;
+  imageId: string;
+  cropData: CropData | null;
+  isProcessing: boolean;
+}
+
+export interface PolaroidState extends WorkflowState {
+  text1: string;
+  text2: string;
+  fontName: string;
+  previewImage: string;
+}
