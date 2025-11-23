@@ -9,7 +9,7 @@ import Step5BeforeAfter from "@/components/steps/Step5BeforeAfter";
 import Step6Final from "@/components/steps/Step6Final";
 import StepNavigation from "@/components/StepNavigation";
 import { PaperTypeSelector } from "@/components/PaperTypeSelector";
-import { PolaroidCropper } from "@/components/PolaroidCropper";
+// ❌ REMOVED: import { PolaroidCropper } from "@/components/PolaroidCropper";
 import { TextCustomization } from "@/components/TextCustomization";
 import { PolaroidPreview } from "@/components/PolaroidPreview";
 import { PhotoData, CropData, PaperType } from "@/types";
@@ -29,17 +29,17 @@ const Index = () => {
   const [selectedLayout, setSelectedLayout] = useState<"standard" | "custom">("standard");
   const [processedImageId, setProcessedImageId] = useState<string | undefined>(undefined);
   
-  // Paper type selection state - FIXED: Using "passport" instead of "passport-standard"
-  const [selectedPaperType, setSelectedPaperType] = useState<PaperType>("passport");
+  // NEW: Paper type selection state
+  const [selectedPaperType, setSelectedPaperType] = useState<PaperType>("passport-standard");
   
-  // Polaroid-specific state
+  // NEW: Polaroid-specific state
   const [polaroidText1, setPolaroidText1] = useState<string>("");
   const [polaroidText2, setPolaroidText2] = useState<string>("");
   const [polaroidFont, setPolaroidFont] = useState<string>("default");
   const [polaroidPreviewImage, setPolaroidPreviewImage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const totalSteps = 7;
+  const totalSteps = 6;
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -66,7 +66,7 @@ const Index = () => {
     setCropData(null);
     setSelectedLayout("standard");
     setProcessedImageId(undefined);
-    setSelectedPaperType("passport"); // FIXED: Using "passport" instead of "passport-standard"
+    setSelectedPaperType("passport-standard");
     setPolaroidText1("");
     setPolaroidText2("");
     setPolaroidFont("default");
@@ -82,14 +82,16 @@ const Index = () => {
     handleNext(); // Go to step 2: Paper Type Selection
   };
 
-  // Handle paper type selection
+  // NEW: Handle paper type selection
   const handlePaperTypeSelect = (paperType: PaperType) => {
     console.log("📋 Paper type selected:", paperType);
     setSelectedPaperType(paperType);
     
-    // For passport type, set default layout
-    if (paperType === "passport") {
+    // Set layout for passport types
+    if (paperType === "passport-standard") {
       setSelectedLayout("standard");
+    } else if (paperType === "passport-custom") {
+      setSelectedLayout("custom");
     }
   };
 
@@ -107,10 +109,11 @@ const Index = () => {
     handleNext();
   };
 
-  // Handle polaroid crop complete
-  const handlePolaroidCropComplete = async (cropCoords: CropData) => {
+  // ✅ UPDATED: Handle polaroid crop complete - now accepts croppedImage and cropCoords
+  const handlePolaroidCropComplete = async (croppedImage: string, cropCoords: CropData) => {
     console.log("✂️ Polaroid crop complete:", cropCoords);
     setCropData(cropCoords);
+    setPhotoData({ ...photoData, cropped: croppedImage }); // ✅ ADDED: Save cropped image
     setIsProcessing(true);
 
     try {
@@ -137,7 +140,7 @@ const Index = () => {
     }
   };
 
-  // Handle text customization complete
+  // NEW: Handle text customization complete
   const handleTextCustomizationComplete = async (text1: string, text2: string, fontName: string) => {
     console.log("📝 Text customization complete:", { text1, text2, fontName });
     setPolaroidText1(text1);
@@ -169,8 +172,10 @@ const Index = () => {
     }
   };
 
-  // Handle polaroid download
+  // NEW: Handle polaroid download
   const handlePolaroidDownload = async () => {
+    setIsProcessing(true);
+
     try {
       const result = await apiService.downloadPolaroidSheet(
         photoData.imageId!,
@@ -178,7 +183,7 @@ const Index = () => {
         polaroidText2,
         polaroidFont
       );
-
+      
       if (result.success && result.data) {
         const link = document.createElement("a");
         link.href = result.data.file;
@@ -188,8 +193,8 @@ const Index = () => {
         document.body.removeChild(link);
 
         toast({
-          title: "Download Started",
-          description: `Downloading ${result.data.filename}`,
+          title: "Download Complete",
+          description: `Downloaded ${result.data.filename}`,
         });
       } else {
         throw new Error(result.error || "Download failed");
@@ -200,6 +205,8 @@ const Index = () => {
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -209,20 +216,21 @@ const Index = () => {
     handleNext();
   };
 
-  // FIXED: Now accepts 3 parameters to match Step4Processing
-  const handleProcessingComplete = (beforeImage: string, afterImage: string, processedId: string) => {
-    console.log("✅ Processing complete:");
-    console.log(`   Processed ID: ${processedId}`);
-    console.log(`   Before image available: ${!!beforeImage}`);
-    console.log(`   After image available: ${!!afterImage}`);
+  const handleProcessingComplete = (processedImageUrl: string, processedId: string) => {
+    console.log("✨ Processing complete:");
+    console.log(`   Processed Image ID: ${processedId}`);
     
-    setPhotoData({ 
-      ...photoData, 
-      processed: afterImage,
-      cropped: beforeImage 
-    });
+    setPhotoData({ ...photoData, processed: processedImageUrl });
     setProcessedImageId(processedId);
     handleNext();
+  };
+
+  const handlePrint = () => {
+    console.log("🖨️ Print initiated");
+    toast({
+      title: "Print Successful",
+      description: "Your photos have been sent to the printer",
+    });
   };
 
   const renderStep = () => {
@@ -247,11 +255,15 @@ const Index = () => {
           );
         
         case 3:
+          // ✅ UPDATED: Use Step2Crop with polaroid aspect ratio instead of PolaroidCropper
           return (
-            <PolaroidCropper
+            <Step2Crop
               imageUrl={photoData.original!}
               onCropComplete={handlePolaroidCropComplete}
-              onCancel={handleRetake}
+              onRetake={handleRetake}
+              aspectRatio={2.3 / 2.5}
+              title="Crop Your Polaroid Photo"
+              subtitle="Position your image within the polaroid frame"
             />
           );
         
@@ -283,7 +295,7 @@ const Index = () => {
       }
     }
 
-    // For passport workflow
+    // For passport workflow (standard and custom)
     switch (currentStep) {
       case 1:
         return (
@@ -322,7 +334,6 @@ const Index = () => {
       case 5:
         return (
           <Step4Processing
-            originalImage={photoData.original!}
             imageId={photoData.imageId!}
             cropData={cropData}
             onProcessingComplete={handleProcessingComplete}
@@ -341,10 +352,13 @@ const Index = () => {
       
       case 7:
         const imageIdForPrint = processedImageId || photoData.imageId!;
+        console.log(`📄 Final step using image ID: ${imageIdForPrint}`);
+        
         return (
           <Step6Final
             imageId={imageIdForPrint}
             layout={selectedLayout}
+            onPrint={handlePrint}
             onRetake={handleRetake}
           />
         );
@@ -355,26 +369,32 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <Camera className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary rounded-lg flex items-center justify-center">
+              <Camera className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-foreground">
                 Passport Photo Studio
               </h1>
             </div>
-            <StepNavigation currentStep={currentStep} totalSteps={totalSteps} />
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      {currentStep > 1 && currentStep < 6 && (
+        <StepNavigation
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          onBack={handleBack}
+          mode={selectedPaperType === "polaroid" ? "polaroid" : "passport"}
+        />
+      )}
+
+      <main className="container mx-auto">
         {renderStep()}
       </main>
     </div>
