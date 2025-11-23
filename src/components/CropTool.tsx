@@ -105,8 +105,9 @@ export const CropTool = ({
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+ const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     setDragStart({
       x: e.clientX - position.x,
