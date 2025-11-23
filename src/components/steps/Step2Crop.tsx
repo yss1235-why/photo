@@ -1,3 +1,5 @@
+// src/components/steps/Step2Crop.tsx - UPDATED WITH ASPECT RATIO PROP
+
 import { useState } from "react";
 import { CropTool } from "@/components/CropTool";
 import { Button } from "@/components/ui/button";
@@ -7,11 +9,21 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Step2CropProps {
   imageUrl: string;
-  imageId: string;
   onCropComplete: (croppedImage: string, cropData: CropData) => void;
+  onRetake: () => void;
+  aspectRatio?: number; // Optional: defaults to passport ratio
+  title?: string; // Optional: custom title
+  subtitle?: string; // Optional: custom subtitle
 }
 
-const Step2Crop = ({ imageUrl, imageId, onCropComplete }: Step2CropProps) => {
+const Step2Crop = ({ 
+  imageUrl, 
+  onCropComplete, 
+  onRetake,
+  aspectRatio,
+  title,
+  subtitle
+}: Step2CropProps) => {
   const { toast } = useToast();
   const [cropData, setCropData] = useState<CropData | null>(null);
 
@@ -59,20 +71,51 @@ const Step2Crop = ({ imageUrl, imageId, onCropComplete }: Step2CropProps) => {
     onCropComplete(imageUrl, cropData);
   };
 
+  const defaultTitle = aspectRatio === (2.3/2.5) ? "Crop Your Polaroid Photo" : "Crop Your Photo";
+  const defaultSubtitle = aspectRatio === (2.3/2.5) 
+    ? "Position your image within the polaroid frame" 
+    : "Position your face within the passport frame";
+
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{title || defaultTitle}</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {subtitle || defaultSubtitle}
+            </p>
+          </div>
+          <div className="text-sm text-muted-foreground text-right">
+            <div>Aspect Ratio: {aspectRatio ? `${(aspectRatio * 100).toFixed(0)}%` : '78%'}</div>
+            <div className="text-xs">
+              {aspectRatio === (2.3/2.5) ? '(Polaroid Format)' : '(Passport Format)'}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex-1 relative">
         <CropTool 
           imageUrl={imageUrl} 
           onCropChange={handleCropChange}
+          aspectRatio={aspectRatio}
         />
       </div>
 
-      <div className="p-4">
+      <div className="p-4 flex gap-2">
+        <Button 
+          onClick={onRetake} 
+          variant="outline"
+          className="flex-1"
+          size="lg"
+        >
+          Retake Photo
+        </Button>
         <Button 
           onClick={handleContinue} 
           disabled={!cropData}
-          className="w-full gap-2"
+          className="flex-1 gap-2"
           size="lg"
         >
           Continue
