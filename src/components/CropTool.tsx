@@ -115,15 +115,16 @@ export const CropTool = ({
     });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return;
+    e.preventDefault();
+    e.stopPropagation();
     
     setPosition({
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y,
     });
   };
-
   const handleMouseUp = () => {
     setIsDragging(false);
   };
@@ -156,13 +157,14 @@ export const CropTool = ({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 relative bg-muted overflow-hidden">
-        <div
+       <div
           ref={containerRef}
-          className="relative w-full h-full cursor-move"
+          className="relative w-full h-full cursor-move select-none"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          style={{ touchAction: 'none', userSelect: 'none' }}
         >
           <img
             ref={imageRef}
