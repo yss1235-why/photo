@@ -105,7 +105,7 @@ export const CropTool = ({
     }
   };
 
- const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
@@ -115,7 +115,7 @@ export const CropTool = ({
     });
   };
 
-const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging) return;
     e.preventDefault();
     e.stopPropagation();
@@ -125,6 +125,7 @@ const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
       y: e.clientY - dragStart.y,
     });
   };
+
   const handleMouseUp = () => {
     setIsDragging(false);
   };
@@ -157,7 +158,7 @@ const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 relative bg-muted overflow-hidden">
-       <div
+        <div
           ref={containerRef}
           className="relative w-full h-full cursor-move select-none"
           onMouseDown={handleMouseDown}
