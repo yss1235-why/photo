@@ -1,5 +1,3 @@
-// src/components/CropTool.tsx - UPDATED WITH ASPECT RATIO PROP
-
 import { useState, useRef, useEffect } from "react";
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,16 +6,9 @@ import { CropData } from "@/types";
 interface CropToolProps {
   imageUrl: string;
   onCropChange: (cropData: CropData) => void;
-  aspectRatio?: number; // Optional: defaults to passport ratio (3.5/4.5)
-  cropBoxLabel?: string; // Optional: label for the crop box
 }
 
-export const CropTool = ({ 
-  imageUrl, 
-  onCropChange, 
-  aspectRatio,
-  cropBoxLabel 
-}: CropToolProps) => {
+export const CropTool = ({ imageUrl, onCropChange }: CropToolProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const cropBoxRef = useRef<HTMLDivElement>(null);
@@ -29,9 +20,7 @@ export const CropTool = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [naturalDimensions, setNaturalDimensions] = useState({ width: 0, height: 0 });
 
-  // Use provided aspect ratio or default to passport (3.5:4.5)
-  const CROP_ASPECT_RATIO = aspectRatio || (3.5 / 4.5);
-  const displayLabel = cropBoxLabel || `Aspect Ratio: ${aspectRatio ? aspectRatio.toFixed(2) : '0.78'}`;
+  const CROP_ASPECT_RATIO = 3.5 / 4.5;
 
   useEffect(() => {
     if (imageLoaded && naturalDimensions.width > 0) {
@@ -48,7 +37,7 @@ export const CropTool = ({
     const displayWidth = image.offsetWidth;
     const displayHeight = image.offsetHeight;
     
-    // Get actual crop box dimensions from the rendered element
+    // ✅ FIX: Get actual crop box dimensions from the rendered element
     const cropBox = cropBoxRef.current;
     const cropWidth = cropBox.offsetWidth;
     const cropHeight = cropBox.offsetHeight;
@@ -56,78 +45,45 @@ export const CropTool = ({
     const containerCenterX = container.width / 2;
     const containerCenterY = container.height / 2;
     
-    const cropLeft = containerCenterX - cropWidth / 2;
-    const cropTop = containerCenterY - cropHeight / 2;
+    const cropCenterX = containerCenterX;
+    const cropCenterY = containerCenterY;
     
-    const imageCropX = (cropLeft - position.x) / zoom;
-    const imageCropY = (cropTop - position.y) / zoom;
-    const imageCropWidth = cropWidth / zoom;
-    const imageCropHeight = cropHeight / zoom;
+    const imageLeft = containerCenterX + position.x - (displayWidth * zoom) / 2;
+    const imageTop = containerCenterY + position.y - (displayHeight * zoom) / 2;
     
-    const normalizedX = imageCropX / displayWidth;
-    const normalizedY = imageCropY / displayHeight;
-    const normalizedWidth = imageCropWidth / displayWidth;
-    const normalizedHeight = imageCropHeight / displayHeight;
+    const cropLeftOnImage = (cropCenterX - cropWidth / 2 - imageLeft) / zoom;
+    const cropTopOnImage = (cropCenterY - cropHeight / 2 - imageTop) / zoom;
+    const cropWidthOnImage = cropWidth / zoom;
+    const cropHeightOnImage = cropHeight / zoom;
+    
+    const normalizedX = cropLeftOnImage / displayWidth;
+    const normalizedY = cropTopOnImage / displayHeight;
+    const normalizedWidth = cropWidthOnImage / displayWidth;
+    const normalizedHeight = cropHeightOnImage / displayHeight;
     
     const cropData: CropData = {
       x: normalizedX,
       y: normalizedY,
       width: normalizedWidth,
       height: normalizedHeight,
+      displayWidth: displayWidth,
+      displayHeight: displayHeight,
       naturalWidth: naturalDimensions.width,
       naturalHeight: naturalDimensions.height,
       zoom: zoom,
     };
-    
+
     onCropChange(cropData);
   };
 
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    setNaturalDimensions({
-      width: img.naturalWidth,
-      height: img.naturalHeight,
-    });
-    setImageLoaded(true);
-    
-    if (containerRef.current) {
-      const container = containerRef.current;
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      
-      const imgWidth = img.offsetWidth;
-      const imgHeight = img.offsetHeight;
-      
-      const initialX = (containerWidth - imgWidth) / 2;
-      const initialY = (containerHeight - imgHeight) / 2;
-      
-      setPosition({ x: initialX, y: initialY });
+  const handleImageLoad = () => {
+    if (imageRef.current) {
+      setNaturalDimensions({
+        width: imageRef.current.naturalWidth,
+        height: imageRef.current.naturalHeight
+      });
+      setImageLoaded(true);
     }
-  };
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    e.stopPropagation();
-    
-    setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
   };
 
   const handleZoomIn = () => {
@@ -140,51 +96,95 @@ export const CropTool = ({
 
   const handleReset = () => {
     setZoom(1);
-    if (containerRef.current && imageRef.current) {
-      const container = containerRef.current;
-      const img = imageRef.current;
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      const imgWidth = img.offsetWidth;
-      const imgHeight = img.offsetHeight;
-      
-      setPosition({
-        x: (containerWidth - imgWidth) / 2,
-        y: (containerHeight - imgHeight) / 2,
-      });
-    }
+    setPosition({ x: 0, y: 0 });
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.touches[0].clientX - position.x,
+      y: e.touches[0].clientY - position.y,
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    setPosition({
+      x: e.touches[0].clientX - dragStart.x,
+      y: e.touches[0].clientY - dragStart.y,
+    });
+  };
+
+  const handleEnd = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mouseup', handleEnd);
+      document.addEventListener('touchend', handleEnd);
+      return () => {
+        document.removeEventListener('mouseup', handleEnd);
+        document.removeEventListener('touchend', handleEnd);
+      };
+    }
+  }, [isDragging]);
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 relative bg-muted overflow-hidden">
+    <div className="h-full flex flex-col">
+      {/* Crop Area */}
+      <div 
+        ref={containerRef}
+        className="flex-1 relative bg-muted overflow-hidden"
+        onMouseMove={handleMouseMove}
+        onTouchMove={handleTouchMove}
+      >
+        {/* Image */}
         <div
-          ref={containerRef}
-          className="relative w-full h-full cursor-move select-none"
+          className="absolute inset-0 flex items-center justify-center cursor-move touch-none"
           onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          style={{ touchAction: 'none', userSelect: 'none' }}
+          onTouchStart={handleTouchStart}
+          style={{
+            transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
+            transition: isDragging ? 'none' : 'transform 0.1s',
+          }}
         >
           <img
             ref={imageRef}
             src={imageUrl}
-            alt="Photo to crop"
-            className="absolute select-none"
-            style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${zoom})`,
-              transformOrigin: "0 0",
-            }}
-            onLoad={handleImageLoad}
+            alt="Crop preview"
+            className="max-w-full max-h-full object-contain select-none pointer-events-none"
             draggable={false}
+            onLoad={handleImageLoad}
           />
+        </div>
 
-          <div
+        {/* Crop Overlay */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-black/40" />
+          
+          <div 
             ref={cropBoxRef}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-primary pointer-events-none"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-primary bg-transparent shadow-lg"
             style={{
-              width: `${Math.min(containerRef.current?.clientWidth ? containerRef.current.clientWidth * 0.7 : 280, 460)}px`,
+              width: `${Math.min(280, containerRef.current?.clientWidth ? containerRef.current.clientWidth * 0.7 : 280)}px`,
               aspectRatio: `${CROP_ASPECT_RATIO}`,
             }}
           >
