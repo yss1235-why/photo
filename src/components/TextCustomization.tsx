@@ -40,6 +40,12 @@ export const TextCustomization: React.FC<TextCustomizationProps> = ({
   const [text2, setText2] = useState(initialText2);
   const [selectedFont, setSelectedFont] = useState(initialFont);
   const [errors, setErrors] = useState<{ text1?: string; text2?: string }>({});
+  const [buttonDisabled, setButtonDisabled] = useState(true);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setButtonDisabled(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const validateText = (text: string): string | undefined => {
     if (text.length > MAX_TEXT_LENGTH) {
@@ -284,9 +290,9 @@ export const TextCustomization: React.FC<TextCustomizationProps> = ({
             onClick={handleContinue} 
             className="gap-2"
             size="lg"
-            disabled={!!errors.text1 || !!errors.text2}
+            disabled={!!errors.text1 || !!errors.text2 || buttonDisabled}
           >
-            Continue to Preview
+            {buttonDisabled ? 'Processing... Please wait' : 'Continue to Preview'}
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
