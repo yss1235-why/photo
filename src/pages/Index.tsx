@@ -201,6 +201,11 @@ const Index = () => {
       setIsProcessing(false);
     }
   };
+  // NEW: Handle polaroid edit text (go back to text customization)
+  const handlePolaroidEditText = () => {
+    console.log("✏️ Editing polaroid text - going back to step 5");
+    setCurrentStep(5); // Go back to text customization step
+  };
 
   const handleLayoutSelect = (layout: "standard" | "custom") => {
     console.log("📐 Layout selected:", layout);
