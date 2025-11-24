@@ -172,36 +172,28 @@ const Index = () => {
     }
   };
 
-  // NEW: Handle polaroid download
-  const handlePolaroidDownload = async () => {
+// NEW: Handle polaroid print
+  const handlePolaroidPrint = async () => {
     setIsProcessing(true);
 
     try {
-      const result = await apiService.downloadPolaroidSheet(
+      const result = await apiService.printPolaroidSheet(
         photoData.imageId!,
-        polaroidText1,
-        polaroidText2,
-        polaroidFont
+        null,
+        1
       );
       
       if (result.success && result.data) {
-        const link = document.createElement("a");
-        link.href = result.data.file;
-        link.download = result.data.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
         toast({
-          title: "Download Complete",
-          description: `Downloaded ${result.data.filename}`,
+          title: "Print Job Sent",
+          description: `Printing to ${result.data.printer || 'default printer'}`,
         });
       } else {
-        throw new Error(result.error || "Download failed");
+        throw new Error(result.error || "Print failed");
       }
     } catch (error) {
       toast({
-        title: "Download Failed",
+        title: "Print Failed",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
@@ -284,9 +276,8 @@ const Index = () => {
             <PolaroidPreview
               previewImage={polaroidPreviewImage}
               isGenerating={isProcessing}
-              onDownload={handlePolaroidDownload}
-              onEdit={() => setCurrentStep(4)}
-              onRetake={handleRetake}
+              onPrint={handlePolaroidPrint}
+              onEdit={handlePolaroidEditText}
             />
           );
         
