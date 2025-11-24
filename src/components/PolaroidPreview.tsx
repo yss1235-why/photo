@@ -3,19 +3,19 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Edit, Loader2, Image as ImageIcon, Ruler, Sparkles } from "lucide-react";
+import { Edit, Loader2, Image as ImageIcon, Ruler, Sparkles, Printer } from "lucide-react";
 
 interface PolaroidPreviewProps {
   previewImage: string;
   isGenerating: boolean;
-  onDownload: () => void;
+  onPrint: () => void;
   onEdit: () => void;
 }
 
 export const PolaroidPreview: React.FC<PolaroidPreviewProps> = ({
   previewImage,
   isGenerating,
-  onDownload,
+  onPrint,
   onEdit,
 }) => {
   return (
@@ -128,13 +128,14 @@ export const PolaroidPreview: React.FC<PolaroidPreviewProps> = ({
             Edit Text or Font
           </Button>
           <Button 
-            onClick={onDownload} 
+          <Button 
+            onClick={onPrint} 
             disabled={isGenerating} 
             className="gap-2 px-8"
             size="lg"
           >
-            <Download className="w-4 h-4" />
-            Download Polaroid Sheet
+            <Printer className="w-4 h-4" />
+            Print Now
           </Button>
         </div>
       </div>
