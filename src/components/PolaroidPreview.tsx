@@ -3,7 +3,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Loader2, Image as ImageIcon, Ruler, Sparkles, Printer } from "lucide-react";
+import { Download, Edit, Loader2, Image as ImageIcon, Ruler, Sparkles, Printer } from "lucide-react";
 
 interface PolaroidPreviewProps {
   previewImage: string;
