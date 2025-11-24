@@ -136,9 +136,7 @@ export const TextCustomization: React.FC<TextCustomizationProps> = ({
           <Type className="w-8 h-8 text-primary" />
           <div>
             <h2 className="text-2xl font-bold">Customize Your Polaroid Text</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Add captions to your polaroid photos
-            </p>
+
           </div>
         </div>
 
@@ -262,16 +260,7 @@ export const TextCustomization: React.FC<TextCustomizationProps> = ({
                 <Type className="w-4 h-4 text-blue-600" />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-blue-900">
-                Text Placement Tips
-              </p>
-              <p className="text-sm text-blue-800">
-                Your text will appear on the characteristic white border at the bottom of each polaroid. 
-                Keep captions short and meaningful for the authentic polaroid look. Both polaroids can 
-                have the same or different text.
-              </p>
-            </div>
+            
           </div>
         </div>
 
