@@ -318,36 +318,7 @@ class ApiService {
     });
   }
 
-  /**
-   * Download final polaroid sheet
-   */
-  async downloadPolaroidSheet(
-    imageId: string,
-    text1: string = "",
-    text2: string = "",
-    fontName: string = "default"
-  ): Promise<ApiResponse<{
-    file: string;
-    filename: string;
-    size_bytes: number;
-    dimensions: string;
-    dpi: number;
-  }>> {
-    console.log("📥 Downloading polaroid sheet...");
-    
-    return this.request("/polaroid/download", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        image_id: imageId,
-        text1,
-        text2,
-        font_name: fontName,
-      }),
-    });
-  }
+
 }
 
 export const apiService = new ApiService();
