@@ -290,7 +290,7 @@ const handleRetake = () => {
             />
           );
         
-        case 4:
+       case 4:
           return (
             <TextCustomization
               onComplete={handleTextCustomizationComplete}
@@ -298,6 +298,8 @@ const handleRetake = () => {
               initialText1={polaroidText1}
               initialText2={polaroidText2}
               initialFont={polaroidFont}
+              isProcessing={isImageProcessing}
+              processingError={processingError}
             />
           );
         
