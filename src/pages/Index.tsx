@@ -175,23 +175,12 @@ const handleRetake = () => {
     setIsGeneratingPreview(true);
 
     try {
-      // STEP 1: Wait for image processing if still running
+      // Wait for image processing if still running
       if (isImageProcessing) {
-        console.log("⏳ Waiting for background processing to complete...");
-        toast({
-          title: "Processing Image",
-          description: "Finalizing your image processing...",
-        });
-        
-        // Poll until processing is done (max 10 seconds)
         let attempts = 0;
-        while (isImageProcessing && attempts < 50) {
-          await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms
+        while (isImageProcessing && !processingError && attempts < 60) {
+          await new Promise(resolve => setTimeout(resolve, 500));
           attempts++;
-        }
-        
-        if (isImageProcessing) {
-          throw new Error("Image processing timeout. Please try again.");
         }
         
         if (processingError) {
