@@ -21,6 +21,8 @@ interface TextCustomizationProps {
   initialText1?: string;
   initialText2?: string;
   initialFont?: string;
+  isProcessing?: boolean;
+  processingError?: string | null;
 }
 
 const MAX_TEXT_LENGTH = 50;
@@ -31,6 +33,8 @@ export const TextCustomization: React.FC<TextCustomizationProps> = ({
   initialText1 = "",
   initialText2 = "",
   initialFont = "default",
+  isProcessing = false,
+  processingError = null,
 }) => {
   const [text1, setText1] = useState(initialText1);
   const [text2, setText2] = useState(initialText2);
@@ -90,6 +94,38 @@ export const TextCustomization: React.FC<TextCustomizationProps> = ({
   return (
     <Card className="p-6 max-w-2xl mx-auto">
       <div className="space-y-6">
+        {/* Processing Status Indicator */}
+        {isProcessing && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-3">
+            <div className="animate-spin w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900">Processing your image in the background...</p>
+              <p className="text-xs text-blue-700">You can continue adding text while we enhance your photo</p>
+            </div>
+          </div>
+        )}
+        
+        {!isProcessing && !processingError && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-green-900">Image ready!</p>
+          </div>
+        )}
+        
+        {processingError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white font-bold">!</div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900">Processing failed</p>
+              <p className="text-xs text-red-700">{processingError}</p>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center gap-3">
           <Type className="w-8 h-8 text-primary" />
           <div>
