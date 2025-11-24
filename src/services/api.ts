@@ -289,6 +289,35 @@ class ApiService {
     });
   }
 
+ /**
+   * Print polaroid sheet directly to printer
+   */
+  async printPolaroidSheet(
+    imageId: string,
+    printer: string | null = null,
+    copies: number = 1
+  ): Promise<ApiResponse<{
+    success: boolean;
+    job_id?: string;
+    printer?: string;
+    message?: string;
+  }>> {
+    console.log("🖨️ Printing polaroid sheet...");
+    
+    return this.request("/print", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_id: imageId,
+        layout: "polaroid",
+        printer: printer,
+        copies: copies,
+      }),
+    });
+  }
+
   /**
    * Download final polaroid sheet
    */
