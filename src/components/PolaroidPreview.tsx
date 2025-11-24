@@ -128,7 +128,6 @@ export const PolaroidPreview: React.FC<PolaroidPreviewProps> = ({
             Edit Text or Font
           </Button>
           <Button 
-          <Button 
             onClick={onPrint} 
             disabled={isGenerating} 
             className="gap-2 px-8"
