@@ -256,6 +256,27 @@ const handleRetake = () => {
     });
   };
 
+  const handlePolaroidPrint = async () => {
+    setIsProcessing(true);
+    try {
+      const result = await apiService.printPolaroidSheet(photoData.imageId!, null, 1);
+      if (result.success) {
+        toast({
+          title: "✅ Print job sent",
+          description: "Your polaroid is printing",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Print failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const renderStep = () => {
     // For polaroid workflow
     if (selectedPaperType === "polaroid") {
