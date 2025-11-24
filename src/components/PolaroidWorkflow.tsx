@@ -145,31 +145,23 @@ export const PolaroidWorkflow: React.FC = () => {
     }
   };
 
-  const handleDownload = async () => {
+const handlePrint = async () => {
     setIsProcessing(true);
 
     try {
-      const result = await apiService.downloadPolaroidSheet(imageId, text1, text2, fontName);
+      const result = await apiService.printPolaroidSheet(imageId, null, 1);
       
       if (result.success && result.data) {
-        // Create download link
-        const link = document.createElement("a");
-        link.href = result.data.file;
-        link.download = result.data.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
         toast({
-          title: "Download Complete",
-          description: `Downloaded ${result.data.filename} (${(result.data.size_bytes / 1024).toFixed(1)}KB)`,
+          title: "Print Job Sent",
+          description: `Printing to ${result.data.printer || 'default printer'}`,
         });
       } else {
-        throw new Error(result.error || "Download failed");
+        throw new Error(result.error || "Print failed");
       }
     } catch (error) {
       toast({
-        title: "Download Failed",
+        title: "Print Failed",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
@@ -356,7 +348,7 @@ export const PolaroidWorkflow: React.FC = () => {
           <PolaroidPreview
             previewImage={previewImage}
             isGenerating={isProcessing}
-            onDownload={handleDownload}
+            onPrint={handlePrint}
             onEdit={handleEditText}
           />
           
