@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Camera } from "lucide-react";
+import { Camera, ImageIcon, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Step1Upload from "@/components/steps/Step1Upload";
 import Step2Crop from "@/components/steps/Step2Crop";
@@ -38,6 +38,12 @@ const Index = () => {
   const [polaroidFont, setPolaroidFont] = useState<string>("default");
   const [polaroidPreviewImage, setPolaroidPreviewImage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // NEW: Background processing state
+  const [isImageProcessing, setIsImageProcessing] = useState(false);
+  const [processedImageData, setProcessedImageData] = useState<string | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   const totalSteps = 6;
 
@@ -53,7 +59,7 @@ const Index = () => {
     }
   };
 
-  const handleRetake = () => {
+const handleRetake = () => {
     console.log("🔄 Retaking photo, resetting all state");
     setCurrentStep(1);
     setPhotoData({
@@ -71,6 +77,11 @@ const Index = () => {
     setPolaroidText2("");
     setPolaroidFont("default");
     setPolaroidPreviewImage("");
+    // NEW: Reset background processing states
+    setIsImageProcessing(false);
+    setProcessedImageData(null);
+    setProcessingError(null);
+    setIsGeneratingPreview(false);
   };
 
   const handleUploadComplete = (imageUrl: string, imageId: string) => {
@@ -109,96 +120,111 @@ const Index = () => {
     handleNext();
   };
 
-  // ✅ UPDATED: Handle polaroid crop complete - now accepts croppedImage and cropCoords
+// ✅ UPDATED: Handle polaroid crop complete - instant navigation with background processing
   const handlePolaroidCropComplete = async (croppedImage: string, cropCoords: CropData) => {
     console.log("✂️ Polaroid crop complete:", cropCoords);
     setCropData(cropCoords);
-    setPhotoData({ ...photoData, cropped: croppedImage }); // ✅ ADDED: Save cropped image
-    setIsProcessing(true);
-
-    try {
-      const result = await apiService.processPolaroidPhoto(photoData.imageId!, cropCoords);
-      
-      if (result.success && result.data) {
-        setPhotoData({ ...photoData, processed: result.data.processed_image });
-        handleNext(); // Go to text customization
+    setPhotoData({ ...photoData, cropped: croppedImage });
+    
+    // ⚡ INSTANT: Go to text customization immediately
+    handleNext();
+    
+    // 🔄 BACKGROUND: Start processing image
+    setIsImageProcessing(true);
+    setProcessingError(null);
+    
+    console.log("🔄 Starting background image processing...");
+    
+    // Process in background (don't await, don't block UI)
+    apiService.processPolaroidPhoto(photoData.imageId!, cropCoords)
+      .then((result) => {
+        if (result.success && result.data) {
+          setProcessedImageData(result.data.processed_image);
+          setIsImageProcessing(false);
+          console.log("✅ Background processing complete!");
+          
+          toast({
+            title: "Image Ready",
+            description: "Your image has been processed and enhanced",
+          });
+        } else {
+          throw new Error(result.error || "Processing failed");
+        }
+      })
+      .catch((error) => {
+        setProcessingError(error instanceof Error ? error.message : "Processing failed");
+        setIsImageProcessing(false);
+        console.error("❌ Background processing failed:", error);
+        
         toast({
-          title: "Crop Applied",
-          description: "Now add custom text to your polaroids",
+          title: "Processing Failed",
+          description: "Image processing failed. Please try again or go back to crop.",
+          variant: "destructive",
         });
-      } else {
-        throw new Error(result.error || "Processing failed");
-      }
-    } catch (error) {
-      toast({
-        title: "Processing Failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
-  // NEW: Handle text customization complete
+// NEW: Handle text customization complete with smart loading
   const handleTextCustomizationComplete = async (text1: string, text2: string, fontName: string) => {
     console.log("📝 Text customization complete:", { text1, text2, fontName });
     setPolaroidText1(text1);
     setPolaroidText2(text2);
     setPolaroidFont(fontName);
-    setIsProcessing(true);
+    
+    // Show loading screen
+    setIsGeneratingPreview(true);
 
     try {
+      // STEP 1: Wait for image processing if still running
+      if (isImageProcessing) {
+        console.log("⏳ Waiting for background processing to complete...");
+        toast({
+          title: "Processing Image",
+          description: "Finalizing your image processing...",
+        });
+        
+        // Poll until processing is done (max 10 seconds)
+        let attempts = 0;
+        while (isImageProcessing && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms
+          attempts++;
+        }
+        
+        if (isImageProcessing) {
+          throw new Error("Image processing timeout. Please try again.");
+        }
+        
+        if (processingError) {
+          throw new Error(processingError);
+        }
+      }
+      
+      // STEP 2: Generate preview with text
+      console.log("🎨 Generating polaroid sheet preview...");
       const result = await apiService.previewPolaroidSheet(photoData.imageId!, text1, text2, fontName);
       
       if (result.success && result.data) {
         setPolaroidPreviewImage(result.data.preview_sheet || result.data.preview);
-        handleNext(); // Go to preview
+        setPhotoData({ ...photoData, processed: processedImageData || result.data.preview });
+        
+        // Hide loading and go to preview
+        setIsGeneratingPreview(false);
+        handleNext();
+        
         toast({
           title: "Preview Ready",
-          description: "Your polaroid sheet is ready to download",
+          description: "Your polaroid sheet is ready to print",
         });
       } else {
         throw new Error(result.error || "Preview generation failed");
       }
     } catch (error) {
+      setIsGeneratingPreview(false);
       toast({
         title: "Preview Failed",
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-// NEW: Handle polaroid print
-  const handlePolaroidPrint = async () => {
-    setIsProcessing(true);
-
-    try {
-      const result = await apiService.printPolaroidSheet(
-        photoData.imageId!,
-        null,
-        1
-      );
-      
-      if (result.success && result.data) {
-        toast({
-          title: "Print Job Sent",
-          description: `Printing to ${result.data.printer || 'default printer'}`,
-        });
-      } else {
-        throw new Error(result.error || "Print failed");
-      }
-    } catch (error) {
-      toast({
-        title: "Print Failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
     }
   };
  // NEW: Handle polaroid edit text (go back to text customization)
@@ -390,8 +416,48 @@ const Index = () => {
         />
       )}
 
-      <main className="container mx-auto">
+     <main className="container mx-auto">
         {renderStep()}
+        
+        {/* Loading Overlay for Preview Generation */}
+        {isGeneratingPreview && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-card rounded-2xl p-8 max-w-md mx-4 shadow-2xl border border-border">
+              <div className="text-center space-y-6">
+                {/* Animated Icon */}
+                <div className="relative">
+                  <div className="w-24 h-24 mx-auto">
+                    <div className="absolute inset-0 border-4 border-primary/30 rounded-2xl animate-pulse" />
+                    <div className="absolute inset-2 border-4 border-primary border-t-transparent rounded-xl animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <ImageIcon className="w-10 h-10 text-primary" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Main Message */}
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold">Creating Your Polaroid...</h3>
+                  <p className="text-muted-foreground text-lg">
+                    This will take about <span className="font-semibold text-foreground">5 seconds</span>
+                  </p>
+                </div>
+                
+                {/* Progress Steps */}
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p className="flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                    Adding your custom text...
+                  </p>
+                  <p className="flex items-center justify-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-primary animate-pulse" />
+                    Arranging polaroids...
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
