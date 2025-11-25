@@ -35,7 +35,7 @@ const Index = () => {
   // NEW: Polaroid-specific state
   const [polaroidText1, setPolaroidText1] = useState<string>("");
   const [polaroidText2, setPolaroidText2] = useState<string>("");
-  const [polaroidFont, setPolaroidFont] = useState<string>("default");
+  const [polaroidFont, setPolaroidFont] = useState<string>("Pacifico-Regular");
   const [polaroidPreviewImage, setPolaroidPreviewImage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -75,7 +75,7 @@ const handleRetake = () => {
     setSelectedPaperType("passport-standard");
     setPolaroidText1("");
     setPolaroidText2("");
-    setPolaroidFont("default");
+    setPolaroidFont("Pacifico-Regular");
     setPolaroidPreviewImage("");
     // NEW: Reset background processing states
     setIsImageProcessing(false);
