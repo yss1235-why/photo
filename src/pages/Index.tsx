@@ -414,7 +414,7 @@ const handleRetake = () => {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-foreground">
-                Passport Photo Studio
+                Photo Studio
               </h1>
             </div>
           </div>
