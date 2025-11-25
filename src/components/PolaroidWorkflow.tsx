@@ -26,7 +26,77 @@ export const PolaroidWorkflow: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const resizeImageIfNeeded = (file: File, maxSizeBytes: number = 3 * 1024 * 1024): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      // If file is already under limit, return as-is
+      if (file.size <= maxSizeBytes) {
+        console.log(`📦 Image already under ${maxSizeBytes / 1024 / 1024}MB, no resize needed`);
+        resolve(file);
+        return;
+      }
+
+      console.log(`🔄 Resizing image from ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
+
+      const img = new Image();
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      img.onload = () => {
+        // Calculate new dimensions (reduce by percentage based on how much over limit)
+        const ratio = Math.sqrt(maxSizeBytes / file.size);
+        const newWidth = Math.floor(img.width * ratio);
+        const newHeight = Math.floor(img.height * ratio);
+
+        // Ensure minimum dimensions for print quality (at least 1200px on longest side)
+        const minDimension = 1200;
+        let finalWidth = newWidth;
+        let finalHeight = newHeight;
+
+        if (Math.max(finalWidth, finalHeight) < minDimension) {
+          if (img.width > img.height) {
+            finalWidth = minDimension;
+            finalHeight = Math.floor((minDimension / img.width) * img.height);
+          } else {
+            finalHeight = minDimension;
+            finalWidth = Math.floor((minDimension / img.height) * img.width);
+          }
+        }
+
+        canvas.width = finalWidth;
+        canvas.height = finalHeight;
+
+        // Use high-quality rendering
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+        }
+
+        // Convert to blob with quality adjustment
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const resizedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              console.log(`✅ Resized to ${(resizedFile.size / 1024 / 1024).toFixed(2)}MB (${finalWidth}x${finalHeight})`);
+              resolve(resizedFile);
+            } else {
+              reject(new Error("Failed to create resized image"));
+            }
+          },
+          "image/jpeg",
+          0.92 // High quality JPEG
+        );
+      };
+
+      img.onerror = () => reject(new Error("Failed to load image for resizing"));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -40,7 +110,7 @@ export const PolaroidWorkflow: React.FC = () => {
       return;
     }
 
-    // Validate file size (10MB max)
+    // Validate file size (10MB max before resize)
     if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File Too Large",
@@ -50,14 +120,34 @@ export const PolaroidWorkflow: React.FC = () => {
       return;
     }
 
-    setImageFile(file);
-    const url = URL.createObjectURL(file);
-    setImageUrl(url);
-    
-    toast({
-      title: "Image Selected",
-      description: `${file.name} ready to upload`,
-    });
+    try {
+      // Resize if over 3MB to speed up upload
+      const processedFile = await resizeImageIfNeeded(file, 3 * 1024 * 1024);
+      
+      setImageFile(processedFile);
+      const url = URL.createObjectURL(processedFile);
+      setImageUrl(url);
+      
+      const sizeInfo = processedFile.size < file.size 
+        ? ` (optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(processedFile.size / 1024 / 1024).toFixed(1)}MB)`
+        : "";
+      
+      toast({
+        title: "Image Selected",
+        description: `${file.name} ready to upload${sizeInfo}`,
+      });
+    } catch (error) {
+      console.error("Image processing error:", error);
+      // Fallback to original file if resize fails
+      setImageFile(file);
+      const url = URL.createObjectURL(file);
+      setImageUrl(url);
+      
+      toast({
+        title: "Image Selected",
+        description: `${file.name} ready to upload`,
+      });
+    }
   };
 
   const handleUpload = async () => {
