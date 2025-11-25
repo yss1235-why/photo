@@ -6,9 +6,10 @@ import { CropData } from "@/types";
 interface CropToolProps {
   imageUrl: string;
   onCropChange: (cropData: CropData) => void;
+  aspectRatio?: number;
 }
 
-export const CropTool = ({ imageUrl, onCropChange }: CropToolProps) => {
+export const CropTool = ({ imageUrl, onCropChange, aspectRatio }: CropToolProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const cropBoxRef = useRef<HTMLDivElement>(null);
@@ -20,7 +21,7 @@ export const CropTool = ({ imageUrl, onCropChange }: CropToolProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [naturalDimensions, setNaturalDimensions] = useState({ width: 0, height: 0 });
 
-  const CROP_ASPECT_RATIO = 3.5 / 4.5;
+ const CROP_ASPECT_RATIO = aspectRatio ?? (3.5 / 4.5);
 
   useEffect(() => {
     if (imageLoaded && naturalDimensions.width > 0) {
