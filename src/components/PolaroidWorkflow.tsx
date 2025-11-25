@@ -21,7 +21,7 @@ export const PolaroidWorkflow: React.FC = () => {
   const [cropData, setCropData] = useState<PolaroidCropData | null>(null);
   const [text1, setText1] = useState<string>("");
   const [text2, setText2] = useState<string>("");
-  const [fontName, setFontName] = useState<string>("default");
+  const [fontName, setFontName] = useState<string>("Pacifico-Regular");
   const [previewImage, setPreviewImage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
