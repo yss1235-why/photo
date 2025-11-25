@@ -160,8 +160,8 @@ export const PolaroidCropper: React.FC<PolaroidCropperProps> = ({
             ref={containerRef}
             className="relative bg-gray-100 overflow-hidden cursor-move shadow-lg"
             style={{
-              width: "460px",
-              height: "500px",
+              width: "368px",
+              height: "400px",
               aspectRatio: `${POLAROID_ASPECT_RATIO}`,
             }}
             onMouseDown={handleMouseDown}
