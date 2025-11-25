@@ -228,11 +228,13 @@ const handleRetake = () => {
     handleNext();
   };
 
-  const handleProcessingComplete = (processedImageUrl: string, processedId: string) => {
+  const handleProcessingComplete = (beforeImage: string, afterImage: string, processedId: string) => {
     console.log("✨ Processing complete:");
+    console.log(`   Before Image: ${beforeImage.substring(0, 50)}...`);
+    console.log(`   After Image: ${afterImage.substring(0, 50)}...`);
     console.log(`   Processed Image ID: ${processedId}`);
     
-    setPhotoData({ ...photoData, processed: processedImageUrl });
+    setPhotoData({ ...photoData, cropped: beforeImage, processed: afterImage });
     setProcessedImageId(processedId);
     handleNext();
   };
