@@ -123,17 +123,16 @@ export interface FontOption {
 }
 
 export const AVAILABLE_FONTS: FontOption[] = [
-  { name: "default", displayName: "Default", preview: "The quick brown fox" },
-  { name: "handwriting_01", displayName: "Handwriting 1", preview: "The quick brown fox" },
-  { name: "handwriting_02", displayName: "Handwriting 2", preview: "The quick brown fox" },
-  { name: "script_01", displayName: "Script 1", preview: "The quick brown fox" },
-  { name: "script_02", displayName: "Script 2", preview: "The quick brown fox" },
-  { name: "elegant_01", displayName: "Elegant", preview: "The quick brown fox" },
-  { name: "playful_01", displayName: "Playful", preview: "The quick brown fox" },
-  { name: "vintage_01", displayName: "Vintage", preview: "The quick brown fox" },
-  { name: "modern_01", displayName: "Modern", preview: "The quick brown fox" },
-  { name: "casual_01", displayName: "Casual", preview: "The quick brown fox" },
-  { name: "artistic_01", displayName: "Artistic", preview: "The quick brown fox" },
+  { name: "Montserrat-Bold", displayName: "Montserrat Bold", preview: "The quick brown fox" },
+  { name: "Pacifico-Regular", displayName: "Pacifico", preview: "The quick brown fox" },
+  { name: "DancingScript-Regular", displayName: "Dancing Script", preview: "The quick brown fox" },
+  { name: "GreatVibes-Regular", displayName: "Great Vibes", preview: "The quick brown fox" },
+  { name: "Satisfy-Regular", displayName: "Satisfy", preview: "The quick brown fox" },
+  { name: "Sacramento-Regular", displayName: "Sacramento", preview: "The quick brown fox" },
+  { name: "Caveat-Regular", displayName: "Caveat", preview: "The quick brown fox" },
+  { name: "KaushanScript-Regular", displayName: "Kaushan Script", preview: "The quick brown fox" },
+  { name: "Allura-Regular", displayName: "Allura", preview: "The quick brown fox" },
+  { name: "Lobster-Regular", displayName: "Lobster", preview: "The quick brown fox" },
 ];
 
 // ==========================================
