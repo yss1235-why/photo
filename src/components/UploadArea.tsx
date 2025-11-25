@@ -112,7 +112,7 @@ export const UploadArea = ({ onUpload, isProcessing = false }: UploadAreaProps) 
         disabled={isProcessing}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
       />
-      <<div className="flex flex-col items-center gap-6 pointer-events-none">
+      <div className="flex flex-col items-center gap-6 pointer-events-none">
         <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
           {(isProcessing || isResizing) ? (
             <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
