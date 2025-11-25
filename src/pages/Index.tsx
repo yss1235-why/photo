@@ -45,7 +45,7 @@ const Index = () => {
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
-  const totalSteps = 6;
+  const totalSteps = selectedPaperType === "polaroid" ? 6 : 7;
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
