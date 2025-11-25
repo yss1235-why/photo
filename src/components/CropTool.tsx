@@ -185,7 +185,7 @@ export const CropTool = ({ imageUrl, onCropChange, aspectRatio }: CropToolProps)
             ref={cropBoxRef}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-primary bg-transparent shadow-lg"
             style={{
-              width: `${Math.min(220, containerRef.current?.clientWidth ? containerRef.current.clientWidth * 0.55 : 220)}px`,
+              width: `${Math.min(180, containerRef.current?.clientWidth ? containerRef.current.clientWidth * 0.45 : 180)}px`,
               aspectRatio: `${CROP_ASPECT_RATIO}`,
             }}
           >
