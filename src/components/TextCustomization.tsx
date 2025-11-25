@@ -32,7 +32,7 @@ export const TextCustomization: React.FC<TextCustomizationProps> = ({
   onBack,
   initialText1 = "",
   initialText2 = "",
-  initialFont = "default",
+  initialFont = "Pacifico-Regular",
   isProcessing = false,
   processingError = null,
 }) => {
