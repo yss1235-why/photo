@@ -41,8 +41,8 @@ const Index = () => {
   const [polaroidPreviewImage, setPolaroidPreviewImage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // NEW: A4 sheet-specific state
-  const [a4Rows, setA4Rows] = useState<number>(7);
+ // NEW: A4 sheet-specific state
+  const [a4Rows, setA4Rows] = useState<number>(1);
   const [a4PreviewImage, setA4PreviewImage] = useState<string>("");
   
   // NEW: Background processing state
@@ -88,8 +88,8 @@ const handleRetake = () => {
     setProcessedImageData(null);
     setProcessingError(null);
     setIsGeneratingPreview(false);
-    // NEW: Reset A4 sheet states
-    setA4Rows(7);
+   // NEW: Reset A4 sheet states
+    setA4Rows(1);
     setA4PreviewImage("");
   };
 
