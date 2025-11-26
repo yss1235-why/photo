@@ -345,11 +345,14 @@ class ApiService {
     });
   }
 
- /**
+/**
    * Print polaroid sheet directly to printer
    */
   async printPolaroidSheet(
     imageId: string,
+    text1: string = "",
+    text2: string = "",
+    fontName: string = "default",
     printer: string | null = null,
     copies: number = 1
   ): Promise<ApiResponse<{
@@ -360,14 +363,16 @@ class ApiService {
   }>> {
     console.log("🖨️ Printing polaroid sheet...");
     
-    return this.request("/print", {
+    return this.request("/polaroid/print", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         image_id: imageId,
-        layout: "polaroid",
+        text1: text1,
+        text2: text2,
+        font_name: fontName,
         printer: printer,
         copies: copies,
       }),
