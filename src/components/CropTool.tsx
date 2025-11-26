@@ -88,11 +88,11 @@ export const CropTool = ({ imageUrl, onCropChange, aspectRatio }: CropToolProps)
   };
 
   const handleZoomIn = () => {
-    setZoom((prev) => Math.min(prev + 0.1, 3));
+    setZoom((prev) => prev + 0.1);
   };
 
   const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 0.1, 0.5));
+    setZoom((prev) => Math.max(prev - 0.1, 0.1));
   };
 
   const handleReset = () => {
@@ -212,7 +212,7 @@ export const CropTool = ({ imageUrl, onCropChange, aspectRatio }: CropToolProps)
           variant="outline"
           size="sm"
           onClick={handleZoomOut}
-          disabled={zoom <= 0.5}
+          disabled={zoom <= 0.1}
         >
           <ZoomOut className="w-4 h-4" />
         </Button>
@@ -225,7 +225,6 @@ export const CropTool = ({ imageUrl, onCropChange, aspectRatio }: CropToolProps)
           variant="outline"
           size="sm"
           onClick={handleZoomIn}
-          disabled={zoom >= 3}
         >
           <ZoomIn className="w-4 h-4" />
         </Button>
