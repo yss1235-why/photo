@@ -239,7 +239,7 @@ const handlePrint = async () => {
     setIsProcessing(true);
 
     try {
-      const result = await apiService.printPolaroidSheet(imageId, null, 1);
+      const result = await apiService.printPolaroidSheet(imageId, text1, text2, fontName, null, 1);
       
       if (result.success && result.data) {
         toast({
