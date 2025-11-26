@@ -139,7 +139,7 @@ export const AVAILABLE_FONTS: FontOption[] = [
 // PAPER TYPE CONFIGURATION (UPDATED - SIMPLIFIED)
 // ==========================================
 
-export type PaperType = "passport" | "polaroid";
+export type PaperType = "passport" | "polaroid" | "passport-a4";
 
 export interface PaperTypeOption {
   value: PaperType;
@@ -156,12 +156,32 @@ export const PAPER_TYPE_OPTIONS: PaperTypeOption[] = [
     details: "Choose your layout: 8 photos (landscape) or 12 photos (portrait)",
   },
   {
+    value: "passport-a4",
+    label: "Passport A4 Sheet",
+    description: "Multiple passport photos on A4 paper",
+    details: "Up to 42 photos (6×7 layout) on high-quality glossy A4 sheet",
+  },
+  {
     value: "polaroid",
     label: "Polaroid",
     description: "Nostalgic polaroid-style photos with custom text",
     details: "2 polaroid photos with white borders and personalized captions",
   },
 ];
+
+// ==========================================
+// A4 SHEET TYPES
+// ==========================================
+
+export interface A4SheetPreviewResponse {
+  status: string;
+  preview: string;
+  preview_sheet: string;
+  dimensions: string;
+  dpi: number;
+  rows: number;
+  total_photos: number;
+}
 
 // ==========================================
 // UI STATE TYPES
