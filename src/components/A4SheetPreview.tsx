@@ -1,7 +1,7 @@
 // src/components/A4SheetPreview.tsx
 
 import React, { useEffect, useState } from "react";
-import { Printer, RotateCcw, Download } from "lucide-react";
+import { Printer, RotateCcw } from "lucide-react";
 import { apiService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -81,21 +81,7 @@ export const A4SheetPreview: React.FC<A4SheetPreviewProps> = ({
     }
   };
 
-  const handleDownload = () => {
-    if (!sheetPreview) return;
-
-    const link = document.createElement("a");
-    link.href = sheetPreview;
-    link.download = `passport_a4_sheet_${rows}rows.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast({
-      title: "✅ Download started",
-      description: `Downloading ${totalPhotos} photos A4 sheet`,
-    });
-  };
+ 
 
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
@@ -157,16 +143,7 @@ export const A4SheetPreview: React.FC<A4SheetPreviewProps> = ({
             Start Over
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={handleDownload}
-            disabled={!sheetPreview || isGenerating}
-            className="flex-1 gap-2"
-            size="lg"
-          >
-            <Download className="w-5 h-5" />
-            Download
-          </Button>
+         
 
           <Button
             onClick={handlePrint}
