@@ -3,8 +3,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { ArrowRight, Grid3X3 } from "lucide-react";
+import { ArrowRight, Grid3X3, Plus, Minus } from "lucide-react";
 
 interface A4RowSelectorProps {
   selectedRows: number;
@@ -21,6 +20,18 @@ export const A4RowSelector: React.FC<A4RowSelectorProps> = ({
 }) => {
   const totalPhotos = selectedRows * 6;
 
+  const handleIncrement = () => {
+    if (selectedRows < 7) {
+      onRowsChange(selectedRows + 1);
+    }
+  };
+
+  const handleDecrement = () => {
+    if (selectedRows > 1) {
+      onRowsChange(selectedRows - 1);
+    }
+  };
+
   return (
     <Card className="p-8 max-w-2xl mx-auto">
       <div className="space-y-8">
@@ -35,27 +46,42 @@ export const A4RowSelector: React.FC<A4RowSelectorProps> = ({
           </p>
         </div>
 
-        {/* Row Selector */}
+        {/* Row Selector - Increment/Decrement Buttons */}
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-muted-foreground">1 row</span>
-            <span className="text-sm font-medium text-muted-foreground">7 rows</span>
+          <div className="flex items-center justify-center gap-6">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleDecrement}
+              disabled={selectedRows <= 1}
+              className="w-14 h-14 rounded-full p-0"
+            >
+              <Minus className="w-6 h-6" />
+            </Button>
+            
+            <div className="text-center min-w-[120px]">
+              <p className="text-6xl font-bold text-green-600">{selectedRows}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {selectedRows === 1 ? "row" : "rows"}
+              </p>
+            </div>
+            
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleIncrement}
+              disabled={selectedRows >= 7}
+              className="w-14 h-14 rounded-full p-0"
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
           </div>
-          
-          <Slider
-            value={[selectedRows]}
-            onValueChange={(value) => onRowsChange(value[0])}
-            min={1}
-            max={7}
-            step={1}
-            className="w-full"
-          />
 
-          {/* Visual Preview */}
+          {/* Visual Preview - Only shows selected rows */}
           <div className="bg-muted rounded-xl p-6">
-            <div className="aspect-[210/297] bg-white rounded-lg border-2 border-dashed border-border mx-auto max-w-[200px] p-2">
+            <div className="bg-white rounded-lg border-2 border-dashed border-border mx-auto max-w-[200px] p-2">
               <div 
-                className="grid gap-1 h-full"
+                className="grid gap-1"
                 style={{ 
                   gridTemplateColumns: 'repeat(6, 1fr)',
                   gridTemplateRows: `repeat(${selectedRows}, 1fr)`
@@ -64,7 +90,7 @@ export const A4RowSelector: React.FC<A4RowSelectorProps> = ({
                 {[...Array(totalPhotos)].map((_, i) => (
                   <div 
                     key={i} 
-                    className="bg-green-200 rounded-sm"
+                    className="bg-green-200 rounded-sm aspect-[35/45]"
                   />
                 ))}
               </div>
@@ -75,7 +101,7 @@ export const A4RowSelector: React.FC<A4RowSelectorProps> = ({
           <div className="text-center space-y-2">
             <p className="text-4xl font-bold text-green-600">{totalPhotos}</p>
             <p className="text-lg text-muted-foreground">
-              passport photos ({selectedRows} rows × 6 columns)
+              passport photos ({selectedRows} {selectedRows === 1 ? "row" : "rows"} × 6 columns)
             </p>
           </div>
 
