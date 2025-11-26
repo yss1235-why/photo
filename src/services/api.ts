@@ -219,9 +219,65 @@ class ApiService {
   }
 
   // ==========================================
-  // POLAROID PHOTO ENDPOINTS
+  // A4 PASSPORT SHEET ENDPOINTS
   // ==========================================
 
+  /**
+   * Preview A4 passport sheet
+   */
+  async previewA4Sheet(
+    imageId: string,
+    rows: number = 7
+  ): Promise<ApiResponse<SheetPreviewResponse>> {
+    console.log(`📄 Generating A4 sheet preview (${rows} rows)...`);
+    
+    return this.request<SheetPreviewResponse>("/preview-sheet", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_id: imageId,
+        layout: "a4",
+        rows: rows,
+      }),
+    });
+  }
+
+  /**
+   * Print A4 passport sheet
+   */
+  async printA4Sheet(
+    imageId: string,
+    rows: number = 7,
+    printer: string | null = null,
+    copies: number = 1
+  ): Promise<ApiResponse<{
+    success: boolean;
+    job_id?: string;
+    printer?: string;
+    message?: string;
+  }>> {
+    console.log(`🖨️ Printing A4 sheet (${rows} rows)...`);
+    
+    return this.request("/print", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_id: imageId,
+        layout: "a4",
+        rows: rows,
+        printer: printer,
+        copies: copies,
+      }),
+    });
+  }
+
+  // ==========================================
+  // POLAROID PHOTO ENDPOINTS
+  // ==========================================
   /**
    * Upload photo for polaroid processing
    */
