@@ -71,11 +71,20 @@ const Step2Crop = ({
     onCropComplete(imageUrl, cropData);
   };
 
-  const defaultTitle = aspectRatio === (2.3/2.5) ? "Crop Your Polaroid Photo" : "Crop Your Photo";
-  const defaultSubtitle = aspectRatio === (2.3/2.5) 
-    ? "Position your image within the polaroid frame" 
-    : "Position your face within the passport frame";
-
+  const getDefaultTitle = () => {
+    if (aspectRatio === (2.3/2.5)) return "Crop Your Polaroid Photo";
+    if (aspectRatio === (32.42/40.0)) return "Crop Your A4 Passport Photo";
+    return "Crop Your Photo";
+  };
+  
+  const getDefaultSubtitle = () => {
+    if (aspectRatio === (2.3/2.5)) return "Position your image within the polaroid frame";
+    if (aspectRatio === (32.42/40.0)) return "Position your face within the A4 passport frame";
+    return "Position your face within the passport frame";
+  };
+  
+  const defaultTitle = getDefaultTitle();
+  const defaultSubtitle = getDefaultSubtitle();
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col">
       <div className="p-4 border-b">
@@ -86,10 +95,10 @@ const Step2Crop = ({
               {subtitle || defaultSubtitle}
             </p>
           </div>
-          <div className="text-sm text-muted-foreground text-right">
+         <div className="text-sm text-muted-foreground text-right">
             <div>Aspect Ratio: {aspectRatio ? `${(aspectRatio * 100).toFixed(0)}%` : '78%'}</div>
             <div className="text-xs">
-              {aspectRatio === (2.3/2.5) ? '(Polaroid Format)' : '(Passport Format)'}
+              {aspectRatio === (2.3/2.5) ? '(Polaroid Format)' : aspectRatio === (32.42/40.0) ? '(A4 Passport Format)' : '(Passport Format)'}
             </div>
           </div>
         </div>
