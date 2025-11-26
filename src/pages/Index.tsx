@@ -9,6 +9,8 @@ import Step5BeforeAfter from "@/components/steps/Step5BeforeAfter";
 import Step6Final from "@/components/steps/Step6Final";
 import StepNavigation from "@/components/StepNavigation";
 import { PaperTypeSelector } from "@/components/PaperTypeSelector";
+import { A4RowSelector } from "@/components/A4RowSelector";
+import { A4SheetPreview } from "@/components/A4SheetPreview";
 // ❌ REMOVED: import { PolaroidCropper } from "@/components/PolaroidCropper";
 import { TextCustomization } from "@/components/TextCustomization";
 import { PolaroidPreview } from "@/components/PolaroidPreview";
@@ -39,13 +41,17 @@ const Index = () => {
   const [polaroidPreviewImage, setPolaroidPreviewImage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // NEW: A4 sheet-specific state
+  const [a4Rows, setA4Rows] = useState<number>(7);
+  const [a4PreviewImage, setA4PreviewImage] = useState<string>("");
+  
   // NEW: Background processing state
   const [isImageProcessing, setIsImageProcessing] = useState(false);
   const [processedImageData, setProcessedImageData] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
-  const totalSteps = selectedPaperType === "polaroid" ? 6 : 7;
+  const totalSteps = selectedPaperType === "polaroid" ? 6 : selectedPaperType === "passport-a4" ? 8 :
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -82,6 +88,9 @@ const handleRetake = () => {
     setProcessedImageData(null);
     setProcessingError(null);
     setIsGeneratingPreview(false);
+    // NEW: Reset A4 sheet states
+    setA4Rows(7);
+    setA4PreviewImage("");
   };
 
   const handleUploadComplete = (imageUrl: string, imageId: string) => {
@@ -103,9 +112,48 @@ const handleRetake = () => {
       setSelectedLayout("standard");
     } else if (paperType === "passport-custom") {
       setSelectedLayout("custom");
+    } else if (paperType === "passport-a4") {
+      setSelectedLayout("standard"); // Use standard crop for A4
     }
   };
 
+  // NEW: Handle A4 row selection
+  const handleA4RowSelect = (rows: number) => {
+    console.log("📄 A4 rows selected:", rows);
+    setA4Rows(rows);
+  };
+
+  // NEW: Handle A4 preview complete
+  const handleA4PreviewComplete = (previewImage: string) => {
+    console.log("📄 A4 preview generated");
+    setA4PreviewImage(previewImage);
+    handleNext();
+  };
+
+  // NEW: Handle A4 print
+  const handleA4Print = async () => {
+    console.log("🖨️ Printing A4 sheet...");
+    try {
+      const imageId = processedImageId || photoData.imageId!;
+      const response = await apiService.printA4Sheet(imageId, a4Rows, null, 1);
+      
+      if (response.success && response.data) {
+        toast({
+          title: "✅ Print job sent",
+          description: `Printing ${a4Rows * 6} photos to ${response.data.printer}`,
+        });
+      } else {
+        throw new Error(response.error || "Print failed");
+      }
+    } catch (error) {
+      console.error("A4 print error:", error);
+      toast({
+        title: "Print failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
   const handlePaperTypeContinue = () => {
     console.log("➡️ Continuing with paper type:", selectedPaperType);
     handleNext(); // Go to step 3: Crop
