@@ -379,7 +379,7 @@ const handleRetake = () => {
       }
     }
 
-   // For A4 passport workflow
+  // For A4 passport workflow
     if (selectedPaperType === "passport-a4") {
       switch (currentStep) {
         case 1:
@@ -405,6 +405,9 @@ const handleRetake = () => {
               imageUrl={photoData.original!}
               onCropComplete={handleCropComplete}
               onRetake={handleRetake}
+              aspectRatio={32.42 / 40.0}
+              title="Crop Your A4 Passport Photo"
+              subtitle="Position your face within the A4 passport frame"
             />
           );
         
