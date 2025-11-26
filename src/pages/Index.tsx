@@ -51,7 +51,7 @@ const Index = () => {
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
-  const totalSteps = selectedPaperType === "polaroid" ? 6 : selectedPaperType === "passport-a4" ? 8 :
+  const totalSteps = selectedPaperType === "polaroid" ? 6 : selectedPaperType === "passport-a4" ? 8 : 7;
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -371,6 +371,81 @@ const handleRetake = () => {
               isGenerating={isProcessing}
               onPrint={handlePolaroidPrint}
               onEdit={handlePolaroidEditText}
+            />
+          );
+        
+        default:
+          return null;
+      }
+    }
+
+   // For A4 passport workflow
+    if (selectedPaperType === "passport-a4") {
+      switch (currentStep) {
+        case 1:
+          return (
+            <Step1Upload
+              onUploadComplete={handleUploadComplete}
+              onRetake={handleRetake}
+            />
+          );
+        
+        case 2:
+          return (
+            <PaperTypeSelector
+              selectedType={selectedPaperType}
+              onSelect={handlePaperTypeSelect}
+              onContinue={handlePaperTypeContinue}
+            />
+          );
+        
+        case 3:
+          return (
+            <Step2Crop
+              imageUrl={photoData.original!}
+              onCropComplete={handleCropComplete}
+              onRetake={handleRetake}
+            />
+          );
+        
+        case 4:
+          return (
+            <Step4Processing
+              imageId={photoData.imageId!}
+              cropData={cropData}
+              onProcessingComplete={handleProcessingComplete}
+            />
+          );
+        
+        case 5:
+          return (
+            <Step5BeforeAfter
+              originalImage={photoData.cropped || photoData.original!}
+              processedImage={photoData.processed!}
+              onContinue={handleNext}
+              onRetake={handleRetake}
+            />
+          );
+        
+        case 6:
+          return (
+            <A4RowSelector
+              selectedRows={a4Rows}
+              onRowsChange={handleA4RowSelect}
+              onContinue={handleNext}
+              onBack={handleBack}
+            />
+          );
+        
+        case 7:
+        case 8:
+          const a4ImageId = processedImageId || photoData.imageId!;
+          return (
+            <A4SheetPreview
+              imageId={a4ImageId}
+              rows={a4Rows}
+              onPrint={handleA4Print}
+              onRetake={handleRetake}
             />
           );
         
