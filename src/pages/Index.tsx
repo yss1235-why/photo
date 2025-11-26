@@ -433,41 +433,51 @@ const handleRetake = () => {
      <main className="container mx-auto">
         {renderStep()}
         
-        {/* Loading Overlay for Preview Generation */}
+{/* Loading Overlay for Preview Generation */}
         {isGeneratingPreview && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="bg-card rounded-2xl p-8 max-w-md mx-4 shadow-2xl border border-border">
               <div className="text-center space-y-6">
-                {/* Animated Icon */}
-                <div className="relative">
-                  <div className="w-24 h-24 mx-auto">
-                    <div className="absolute inset-0 border-4 border-primary/30 rounded-2xl animate-pulse" />
-                    <div className="absolute inset-2 border-4 border-primary border-t-transparent rounded-xl animate-spin" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <ImageIcon className="w-10 h-10 text-primary" />
-                    </div>
+                {/* Circular Progress Indicator */}
+                <div className="w-32 h-32 mx-auto relative">
+                  <div className="w-full h-full border-8 border-primary/20 rounded-full" />
+                  <div 
+                    className="absolute inset-0 border-8 border-primary border-t-transparent rounded-full animate-spin"
+                    style={{
+                      animationDuration: "1s"
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-primary">
+                      {Math.min(90, Math.floor((Date.now() % 5000) / 50))}%
+                    </span>
                   </div>
                 </div>
                 
                 {/* Main Message */}
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">Creating Your Polaroid...</h3>
+                  <h3 className="text-3xl font-bold">Creating Your Polaroid...</h3>
                   <p className="text-muted-foreground text-lg">
                     This will take about <span className="font-semibold text-foreground">5 seconds</span>
                   </p>
                 </div>
                 
-                {/* Progress Steps */}
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p className="flex items-center justify-center gap-2">
-                    <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                    Adding your custom text...
-                  </p>
-                  <p className="flex items-center justify-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-primary animate-pulse" />
-                    Arranging polaroids...
-                  </p>
+                {/* Progress Bar */}
+                <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
+                  <div
+                    className="bg-primary h-full transition-all duration-300 ease-out animate-pulse"
+                    style={{ width: `${Math.min(90, Math.floor((Date.now() % 5000) / 50))}%` }}
+                  />
                 </div>
+                
+                {/* Status Message */}
+                <p className="text-lg text-muted-foreground">
+                  Adding your custom text and arranging polaroids...
+                </p>
+                
+                <p className="text-sm text-muted-foreground/70">
+                  Using professional print standards
+                </p>
               </div>
             </div>
           </div>
