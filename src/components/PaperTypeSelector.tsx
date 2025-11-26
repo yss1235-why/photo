@@ -5,9 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { FileImage, Camera, Check } from "lucide-react";
+import { FileImage, Camera, Check, FileText } from "lucide-react";
 import { PaperType, PAPER_TYPE_OPTIONS } from "@/types";
-
 interface PaperTypeSelectorProps {
   selectedType: PaperType;
   onSelect: (type: PaperType) => void;
@@ -18,6 +17,8 @@ const getIconForType = (type: PaperType) => {
   switch (type) {
     case "passport":
       return <FileImage className="w-6 h-6" />;
+    case "passport-a4":
+      return <FileText className="w-6 h-6" />;
     case "polaroid":
       return <Camera className="w-6 h-6" />;
     default:
@@ -29,6 +30,8 @@ const getColorForType = (type: PaperType) => {
   switch (type) {
     case "passport":
       return "from-blue-500 to-blue-600";
+    case "passport-a4":
+      return "from-green-500 to-green-600";
     case "polaroid":
       return "from-purple-500 to-purple-600";
     default:
@@ -136,7 +139,7 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
           </div>
         )}
 
-        {selectedType === "passport" && (
+       {selectedType === "passport" && (
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl p-5">
             <div className="flex gap-3">
               <div className="shrink-0">
@@ -152,6 +155,33 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
                   Professional passport photos with automatic face detection, background removal, 
                   and color correction. You'll choose your layout in the next step (8 or 12 photos).
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {selectedType === "passport-a4" && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5">
+            <div className="flex gap-3">
+              <div className="shrink-0">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-green-600" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-green-900">
+                  Passport A4 Sheet
+                </p>
+                <p className="text-sm text-green-800">
+                  Print up to 42 passport photos on a single A4 sheet (6 photos per row, up to 7 rows).
+                  Perfect for bulk printing with high-quality glossy paper.
+                </p>
+                <ul className="text-sm text-green-700 mt-2 space-y-1">
+                  <li>• 6 photos per row</li>
+                  <li>• Choose 1-7 rows (6-42 photos)</li>
+                  <li>• Professional 300 DPI quality</li>
+                  <li>• Optimized for A4 glossy paper</li>
+                </ul>
               </div>
             </div>
           </div>
