@@ -295,10 +295,17 @@ const handleRetake = () => {
     });
   };
 
-  const handlePolaroidPrint = async () => {
+const handlePolaroidPrint = async () => {
     setIsProcessing(true);
     try {
-      const result = await apiService.printPolaroidSheet(photoData.imageId!, null, 1);
+      const result = await apiService.printPolaroidSheet(
+        photoData.imageId!,
+        polaroidText1 || "",
+        polaroidText2 || "",
+        polaroidFont || "default",
+        null,
+        1
+      );
       if (result.success) {
         toast({
           title: "✅ Print job sent",
