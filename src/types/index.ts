@@ -212,3 +212,28 @@ export interface PolaroidState extends WorkflowState {
   fontName: string;
   previewImage: string;
 }
+
+// ==========================================
+// FRONTEND CONFIG TYPES (Admin Controlled)
+// ==========================================
+
+export interface FrontendFeatures {
+  passport_4x6: boolean;
+  passport_a4: boolean;
+  polaroid: boolean;
+}
+
+export interface FrontendConfig {
+  features: FrontendFeatures;
+  mobile_only_mode: boolean;
+  one_time_link_mode: boolean;
+}
+
+export interface PrintResponse {
+  success: boolean;
+  queued?: boolean;
+  job_id?: string;
+  printer?: string;
+  message?: string;
+  settings?: Record<string, unknown>;
+}
