@@ -273,18 +273,11 @@ const handleRetake = () => {
     );
   }
 
-  // Get enabled features for passing to components
+   // Get enabled features for passing to components
   const enabledFeatures: FrontendFeatures = frontendConfig?.features || {
     passport_4x6: true,
     passport_a4: true,
     polaroid: true,
-  };
-
-  // Original code continues below - this replaces the section that was cut off
-  // The handleA4Print error handling was incomplete in the search, this fixes it error.message : "Please try again",
-        variant: "destructive",
-      });
-    }
   };
   const handlePaperTypeContinue = () => {
     console.log("➡️ Continuing with paper type:", selectedPaperType);
@@ -427,35 +420,7 @@ const handleRetake = () => {
     });
   };
 
-const handlePolaroidPrint = async () => {
-    setIsProcessing(true);
-    try {
-      const result = await apiService.printPolaroidSheet(
-        photoData.imageId!,
-        polaroidText1 || "",
-        polaroidText2 || "",
-        polaroidFont || "default",
-        null,
-        1
-      );
-      if (result.success) {
-        toast({
-          title: "✅ Print job sent",
-          description: "Your polaroid is printing",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Print failed",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const renderStep = () => {
+const renderStep = () => {
     // For polaroid workflow
     if (selectedPaperType === "polaroid") {
       switch (currentStep) {
@@ -478,15 +443,14 @@ const handlePolaroidPrint = async () => {
           );
         
         case 3:
-          // ✅ UPDATED: Use Step2Crop with polaroid aspect ratio instead of PolaroidCropper
           return (
             <Step2Crop
               imageUrl={photoData.original!}
-              onCropComplete={handlePolaroidCropComplete}
+              onCropComplete={handleCropComplete}
               onRetake={handleRetake}
-              aspectRatio={2.3 / 2.5}
-              title="Crop Your Polaroid Photo"
-              subtitle="Position your image within the polaroid frame"
+              aspectRatio={32.42 / 40.0}
+              title="Crop Your A4 Passport Photo"
+              subtitle="Position your face within the A4 passport frame"
             />
           );
         
@@ -530,26 +494,24 @@ const handlePolaroidPrint = async () => {
             />
           );
         
-        case 2:
-          return (
-            <PaperTypeSelector
-              selectedType={selectedPaperType}
-              onSelect={handlePaperTypeSelect}
-              onContinue={handlePaperTypeContinue}
-            />
-          );
-        
-        case 3:
-          return (
-            <Step2Crop
-              imageUrl={photoData.original!}
-              onCropComplete={handleCropComplete}
-              onRetake={handleRetake}
-              aspectRatio={32.42 / 40.0}
-              title="Crop Your A4 Passport Photo"
-              subtitle="Position your face within the A4 passport frame"
-            />
-          );
+       case 2:
+        return (
+          <PaperTypeSelector
+            selectedType={selectedPaperType}
+            onSelect={handlePaperTypeSelect}
+            onContinue={handlePaperTypeContinue}
+            enabledFeatures={enabledFeatures}
+          />
+        );
+      
+      case 3:
+        return (
+          <Step2Crop
+            imageUrl={photoData.original!}
+            onCropComplete={handleCropComplete}
+            onRetake={handleRetake}
+          />
+        );
         
         case 4:
           return (
