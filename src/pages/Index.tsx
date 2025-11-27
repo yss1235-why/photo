@@ -346,11 +346,16 @@ const handleRetake = () => {
     
     console.log("🔄 Starting background image processing...");
     
-    // Process in background (don't await, don't block UI)
+   // Process in background (don't await, don't block UI)
     apiService.processPolaroidPhoto(photoData.imageId!, cropCoords)
       .then((result) => {
         if (result.success && result.data) {
           setProcessedImageData(result.data.processed_image);
+          // CRITICAL: Update processedImageId with the new base_id from backend
+          if (result.data.image_id) {
+            setProcessedImageId(result.data.image_id);
+            console.log("📋 Updated processedImageId:", result.data.image_id);
+          }
           setIsImageProcessing(false);
           console.log("✅ Background processing complete!");
           
@@ -399,9 +404,12 @@ const handleRetake = () => {
         }
       }
       
-      // STEP 2: Generate preview with text
+     // STEP 2: Generate preview with text
+      // Use processedImageId (base_id from /process) if available, otherwise fall back to original
+      const imageIdForPreview = processedImageId || photoData.imageId!;
       console.log("🎨 Generating polaroid sheet preview...");
-      const result = await apiService.previewPolaroidSheet(photoData.imageId!, text1, text2, fontName);
+      console.log("   Using image ID:", imageIdForPreview);
+      const result = await apiService.previewPolaroidSheet(imageIdForPreview, text1, text2, fontName);
       
       if (result.success && result.data) {
         setPolaroidPreviewImage(result.data.preview_sheet || result.data.preview);
