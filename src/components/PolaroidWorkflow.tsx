@@ -26,40 +26,58 @@ export const PolaroidWorkflow: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  const resizeImageIfNeeded = (file: File, maxSizeBytes: number = 3 * 1024 * 1024): Promise<File> => {
+  const optimizeImageForUpload = (file: File): Promise<{ file: File; warning?: string }> => {
     return new Promise((resolve, reject) => {
-      // If file is already under limit, return as-is
-      if (file.size <= maxSizeBytes) {
-        console.log(`📦 Image already under ${maxSizeBytes / 1024 / 1024}MB, no resize needed`);
-        resolve(file);
-        return;
-      }
-
-      console.log(`🔄 Resizing image from ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
-
       const img = new Image();
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
       img.onload = () => {
-        // Calculate new dimensions (reduce by percentage based on how much over limit)
-        const ratio = Math.sqrt(maxSizeBytes / file.size);
-        const newWidth = Math.floor(img.width * ratio);
-        const newHeight = Math.floor(img.height * ratio);
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+        const originalSizeMB = file.size / 1024 / 1024;
+        const isPNG = file.type === "image/png";
 
-        // Ensure minimum dimensions for print quality (at least 1200px on longest side)
-        const minDimension = 1200;
-        let finalWidth = newWidth;
-        let finalHeight = newHeight;
+        // Print quality thresholds for polaroid (2.3" x 2.5" at 300 DPI)
+        const maxDimension = 1400; // More than enough for 300 DPI printing
+        const minDimension = 700;  // Minimum for acceptable print quality
 
-        if (Math.max(finalWidth, finalHeight) < minDimension) {
-          if (img.width > img.height) {
-            finalWidth = minDimension;
-            finalHeight = Math.floor((minDimension / img.width) * img.height);
-          } else {
-            finalHeight = minDimension;
-            finalWidth = Math.floor((minDimension / img.height) * img.width);
-          }
+        let finalWidth = originalWidth;
+        let finalHeight = originalHeight;
+        let warning: string | undefined;
+
+        // Check if image is too small for quality printing
+        const shortestSide = Math.min(originalWidth, originalHeight);
+        if (shortestSide < minDimension) {
+          warning = "Low resolution image - print quality may be reduced";
+          console.log(`⚠️ Warning: Image resolution (${originalWidth}x${originalHeight}) may result in lower print quality`);
+        }
+
+        // Determine if we need to resize (image exceeds max useful dimension)
+        const longestSide = Math.max(originalWidth, originalHeight);
+        const needsResize = longestSide > maxDimension;
+
+        // Determine if we need to convert (PNG to JPEG for smaller file size)
+        const needsConvert = isPNG;
+
+        // If no processing needed, return original
+        if (!needsResize && !needsConvert) {
+          console.log(`📦 Image already optimal: ${originalWidth}x${originalHeight}, ${originalSizeMB.toFixed(2)}MB`);
+          resolve({ file, warning });
+          URL.revokeObjectURL(img.src);
+          return;
+        }
+
+        // Calculate new dimensions if resizing needed
+        if (needsResize) {
+          const ratio = maxDimension / longestSide;
+          finalWidth = Math.floor(originalWidth * ratio);
+          finalHeight = Math.floor(originalHeight * ratio);
+          console.log(`🔄 Resizing: ${originalWidth}x${originalHeight} → ${finalWidth}x${finalHeight}`);
+        }
+
+        if (needsConvert) {
+          console.log(`🔄 Converting PNG to JPEG for smaller file size`);
         }
 
         canvas.width = finalWidth;
@@ -72,30 +90,46 @@ export const PolaroidWorkflow: React.FC = () => {
           ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
         }
 
-        // Convert to blob with quality adjustment
+        // Convert to JPEG blob
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              const resizedFile = new File([blob], file.name, {
+              // Update filename extension if converted from PNG
+              let newFilename = file.name;
+              if (isPNG) {
+                newFilename = file.name.replace(/\.png$/i, ".jpg");
+              }
+
+              const optimizedFile = new File([blob], newFilename, {
                 type: "image/jpeg",
                 lastModified: Date.now(),
               });
-              console.log(`✅ Resized to ${(resizedFile.size / 1024 / 1024).toFixed(2)}MB (${finalWidth}x${finalHeight})`);
-              resolve(resizedFile);
+
+              const newSizeMB = optimizedFile.size / 1024 / 1024;
+              const savings = ((1 - optimizedFile.size / file.size) * 100).toFixed(0);
+
+              console.log(`✅ Optimized: ${finalWidth}x${finalHeight}, ${newSizeMB.toFixed(2)}MB (${savings}% smaller)`);
+
+              URL.revokeObjectURL(img.src);
+              resolve({ file: optimizedFile, warning });
             } else {
-              reject(new Error("Failed to create resized image"));
+              URL.revokeObjectURL(img.src);
+              reject(new Error("Failed to create optimized image"));
             }
           },
           "image/jpeg",
-          0.92 // High quality JPEG
+          0.92 // High quality JPEG - optimal for print
         );
       };
 
-      img.onerror = () => reject(new Error("Failed to load image for resizing"));
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error("Failed to load image for optimization"));
+      };
+
       img.src = URL.createObjectURL(file);
     });
   };
-
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -120,9 +154,9 @@ export const PolaroidWorkflow: React.FC = () => {
       return;
     }
 
-    try {
-      // Resize if over 3MB to speed up upload
-      const processedFile = await resizeImageIfNeeded(file, 3 * 1024 * 1024);
+try {
+      // Optimize image: resize if too large, convert PNG to JPEG
+      const { file: processedFile, warning } = await optimizeImageForUpload(file);
       
       setImageFile(processedFile);
       const url = URL.createObjectURL(processedFile);
@@ -132,13 +166,21 @@ export const PolaroidWorkflow: React.FC = () => {
         ? ` (optimized from ${(file.size / 1024 / 1024).toFixed(1)}MB to ${(processedFile.size / 1024 / 1024).toFixed(1)}MB)`
         : "";
       
-      toast({
-        title: "Image Selected",
-        description: `${file.name} ready to upload${sizeInfo}`,
-      });
+      if (warning) {
+        toast({
+          title: "Image Selected",
+          description: warning,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Image Selected",
+          description: `${file.name} ready to upload${sizeInfo}`,
+        });
+      }
     } catch (error) {
       console.error("Image processing error:", error);
-      // Fallback to original file if resize fails
+      // Fallback to original file if optimization fails
       setImageFile(file);
       const url = URL.createObjectURL(file);
       setImageUrl(url);
