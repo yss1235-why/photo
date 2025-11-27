@@ -47,12 +47,17 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
   onContinue,
   enabledFeatures,
 }) => {
-  // Filter options based on enabled features
+  console.log("🎛️ PaperTypeSelector - enabledFeatures:", enabledFeatures);
+ // Filter options based on enabled features
   const filteredOptions = PAPER_TYPE_OPTIONS.filter((option) => {
     if (!enabledFeatures) return true; // Show all if no config loaded
     
+    console.log("🔍 Filtering option:", option.value, "Features:", enabledFeatures);
+    
     switch (option.value) {
       case "passport":
+      case "passport-standard":
+      case "passport-custom":
         return enabledFeatures.passport_4x6;
       case "passport-a4":
         return enabledFeatures.passport_a4;
