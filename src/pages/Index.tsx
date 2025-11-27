@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Camera, ImageIcon, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Step1Upload from "@/components/steps/Step1Upload";
@@ -14,7 +14,7 @@ import { A4SheetPreview } from "@/components/A4SheetPreview";
 // ❌ REMOVED: import { PolaroidCropper } from "@/components/PolaroidCropper";
 import { TextCustomization } from "@/components/TextCustomization";
 import { PolaroidPreview } from "@/components/PolaroidPreview";
-import { PhotoData, CropData, PaperType } from "@/types";
+import { PhotoData, CropData, PaperType, FrontendConfig, FrontendFeatures } from "@/types";
 import { apiService } from "@/services/api";
 
 const Index = () => {
@@ -50,6 +50,61 @@ const Index = () => {
   const [processedImageData, setProcessedImageData] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+
+  // NEW: Admin controlled features
+  const [frontendConfig, setFrontendConfig] = useState<FrontendConfig | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
+  const [isMobileDevice, setIsMobileDevice] = useState(true);
+
+  // Fetch frontend config on mount
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await apiService.getFrontendConfig();
+        if (response.success && response.data) {
+          console.log("⚙️ Frontend config loaded:", response.data);
+          setFrontendConfig(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load frontend config:", error);
+      } finally {
+        setConfigLoading(false);
+      }
+    };
+
+    // Check if mobile device
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor;
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      setIsMobileDevice(isMobile);
+    };
+
+    fetchConfig();
+    checkMobile();
+  }, []);
+
+  // Helper function to show appropriate toast for print response
+  const showPrintToast = (response: { success: boolean; data?: { queued?: boolean; job_id?: string; printer?: string; message?: string }; error?: string }) => {
+    if (response.success && response.data) {
+      if (response.data.queued) {
+        toast({
+          title: "⏳ Print Request Queued",
+          description: response.data.message || "Your print request is waiting for admin approval.",
+        });
+      } else {
+        toast({
+          title: "✅ Print job sent",
+          description: response.data.message || `Sent to ${response.data.printer}`,
+        });
+      }
+    } else {
+      toast({
+        title: "Print failed",
+        description: response.error || "Unknown error occurred",
+        variant: "destructive",
+      });
+    }
+  };
 
   const totalSteps = selectedPaperType === "polaroid" ? 6 : selectedPaperType === "passport-a4" ? 8 : 7;
 
@@ -130,26 +185,103 @@ const handleRetake = () => {
     handleNext();
   };
 
-  // NEW: Handle A4 print
+ // NEW: Handle A4 print
   const handleA4Print = async () => {
     console.log("🖨️ Printing A4 sheet...");
     try {
       const imageId = processedImageId || photoData.imageId!;
       const response = await apiService.printA4Sheet(imageId, a4Rows, null, 1);
-      
-      if (response.success && response.data) {
-        toast({
-          title: "✅ Print job sent",
-          description: `Printing ${a4Rows * 6} photos to ${response.data.printer}`,
-        });
-      } else {
-        throw new Error(response.error || "Print failed");
-      }
+      showPrintToast(response);
     } catch (error) {
       console.error("A4 print error:", error);
       toast({
         title: "Print failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle Polaroid print
+  const handlePolaroidPrint = async () => {
+    console.log("🖨️ Printing polaroid sheet...");
+    try {
+      const imageId = processedImageId || photoData.imageId!;
+      const response = await apiService.printPolaroidSheet(
+        imageId,
+        polaroidText1,
+        polaroidText2,
+        polaroidFont,
+        null,
+        1
+      );
+      showPrintToast(response);
+    } catch (error) {
+      console.error("Polaroid print error:", error);
+      toast({
+        title: "Print failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle Passport 4x6 print
+  const handlePassportPrint = async (layout: "3x4" | "2x3") => {
+    console.log(`🖨️ Printing passport sheet (${layout})...`);
+    try {
+      const imageId = processedImageId || photoData.imageId!;
+      const response = await apiService.printPassportSheet(imageId, layout, null, 1);
+      showPrintToast(response);
+    } catch (error) {
+      console.error("Passport print error:", error);
+      toast({
+        title: "Print failed",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Check if mobile only mode is blocking access
+  if (!configLoading && frontendConfig?.mobile_only_mode && !isMobileDevice) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Camera className="w-8 h-8 text-blue-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Mobile Only</h1>
+          <p className="text-gray-600">
+            This application is currently only available on mobile devices. 
+            Please scan the QR code or visit this page from your phone.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while config loads
+  if (configLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Get enabled features for passing to components
+  const enabledFeatures: FrontendFeatures = frontendConfig?.features || {
+    passport_4x6: true,
+    passport_a4: true,
+    polaroid: true,
+  };
+
+  // Original code continues below - this replaces the section that was cut off
+  // The handleA4Print error handling was incomplete in the search, this fixes it error.message : "Please try again",
         variant: "destructive",
       });
     }
@@ -341,6 +473,7 @@ const handlePolaroidPrint = async () => {
               selectedType={selectedPaperType}
               onSelect={handlePaperTypeSelect}
               onContinue={handlePaperTypeContinue}
+              enabledFeatures={enabledFeatures}
             />
           );
         
