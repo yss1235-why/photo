@@ -6,34 +6,48 @@ interface UploadAreaProps {
   isProcessing?: boolean;
 }
 
-const resizeImageIfNeeded = (file: File, maxSizeBytes: number = 3 * 1024 * 1024): Promise<File> => {
+const optimizeImageForUpload = (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
-    if (file.size <= maxSizeBytes) {
-      console.log(`📦 Image already under ${maxSizeBytes / 1024 / 1024}MB, no resize needed`);
-      resolve(file);
-      return;
-    }
-
-    console.log(`🔄 Resizing image from ${(file.size / 1024 / 1024).toFixed(2)}MB...`);
-
     const img = new Image();
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
     img.onload = () => {
-      const ratio = Math.sqrt(maxSizeBytes / file.size);
-      let finalWidth = Math.floor(img.width * ratio);
-      let finalHeight = Math.floor(img.height * ratio);
+      const originalWidth = img.width;
+      const originalHeight = img.height;
+      const isPNG = file.type === "image/png";
 
-      const minDimension = 1200;
-      if (Math.max(finalWidth, finalHeight) < minDimension) {
-        if (img.width > img.height) {
-          finalWidth = minDimension;
-          finalHeight = Math.floor((minDimension / img.width) * img.height);
-        } else {
-          finalHeight = minDimension;
-          finalWidth = Math.floor((minDimension / img.height) * img.width);
-        }
+      // Print quality thresholds for passport photos (35mm x 45mm at 300 DPI)
+      const maxDimension = 1400; // More than enough for 300 DPI printing
+
+      let finalWidth = originalWidth;
+      let finalHeight = originalHeight;
+
+      // Determine if we need to resize (image exceeds max useful dimension)
+      const longestSide = Math.max(originalWidth, originalHeight);
+      const needsResize = longestSide > maxDimension;
+
+      // Determine if we need to convert (PNG to JPEG for smaller file size)
+      const needsConvert = isPNG;
+
+      // If no processing needed, return original
+      if (!needsResize && !needsConvert) {
+        console.log(`📦 Image already optimal: ${originalWidth}x${originalHeight}`);
+        resolve(file);
+        URL.revokeObjectURL(img.src);
+        return;
+      }
+
+      // Calculate new dimensions if resizing needed
+      if (needsResize) {
+        const ratio = maxDimension / longestSide;
+        finalWidth = Math.floor(originalWidth * ratio);
+        finalHeight = Math.floor(originalHeight * ratio);
+        console.log(`🔄 Resizing: ${originalWidth}x${originalHeight} → ${finalWidth}x${finalHeight}`);
+      }
+
+      if (needsConvert) {
+        console.log(`🔄 Converting PNG to JPEG for smaller file size`);
       }
 
       canvas.width = finalWidth;
@@ -48,14 +62,24 @@ const resizeImageIfNeeded = (file: File, maxSizeBytes: number = 3 * 1024 * 1024)
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            const resizedFile = new File([blob], file.name, {
+            let newFilename = file.name;
+            if (isPNG) {
+              newFilename = file.name.replace(/\.png$/i, ".jpg");
+            }
+
+            const optimizedFile = new File([blob], newFilename, {
               type: "image/jpeg",
               lastModified: Date.now(),
             });
-            console.log(`✅ Resized to ${(resizedFile.size / 1024 / 1024).toFixed(2)}MB (${finalWidth}x${finalHeight})`);
-            resolve(resizedFile);
+
+            const savings = ((1 - optimizedFile.size / file.size) * 100).toFixed(0);
+            console.log(`✅ Optimized: ${finalWidth}x${finalHeight}, ${(optimizedFile.size / 1024 / 1024).toFixed(2)}MB (${savings}% smaller)`);
+
+            URL.revokeObjectURL(img.src);
+            resolve(optimizedFile);
           } else {
-            reject(new Error("Failed to create resized image"));
+            URL.revokeObjectURL(img.src);
+            reject(new Error("Failed to create optimized image"));
           }
         },
         "image/jpeg",
@@ -63,18 +87,21 @@ const resizeImageIfNeeded = (file: File, maxSizeBytes: number = 3 * 1024 * 1024)
       );
     };
 
-    img.onerror = () => reject(new Error("Failed to load image for resizing"));
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error("Failed to load image for optimization"));
+    };
+
     img.src = URL.createObjectURL(file);
   });
 };
-
 export const UploadArea = ({ onUpload, isProcessing = false }: UploadAreaProps) => {
   const [isResizing, setIsResizing] = useState(false);
 
   const processAndUpload = useCallback(async (file: File) => {
     try {
       setIsResizing(true);
-      const processedFile = await resizeImageIfNeeded(file, 3 * 1024 * 1024);
+      const processedFile = await optimizeImageForUpload(file);
       onUpload(processedFile);
     } catch (error) {
       console.error("Image processing error:", error);
@@ -83,7 +110,6 @@ export const UploadArea = ({ onUpload, isProcessing = false }: UploadAreaProps) 
       setIsResizing(false);
     }
   }, [onUpload]);
-
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
