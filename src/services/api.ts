@@ -9,9 +9,10 @@ import {
 } from "@/types";
 import { cloudinaryService } from "./cloudinary";
 
+import { FrontendConfig, PrintResponse } from "@/types";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const USE_CLOUDINARY = import.meta.env.VITE_USE_CLOUDINARY !== "false";
-
 class ApiService {
   private cloudinaryEnabled = USE_CLOUDINARY;
   private cloudinaryFallbackCount = 0;
@@ -218,6 +219,14 @@ class ApiService {
     return this.request("/health");
   }
 
+  /**
+   * Get frontend configuration (admin controlled features)
+   */
+  async getFrontendConfig(): Promise<ApiResponse<FrontendConfig>> {
+    console.log("⚙️ Fetching frontend config...");
+    return this.request<FrontendConfig>("/api/frontend-config");
+  }
+
   // ==========================================
   // A4 PASSPORT SHEET ENDPOINTS
   // ==========================================
@@ -244,7 +253,7 @@ class ApiService {
     });
   }
 
-  /**
+ /**
    * Print A4 passport sheet
    */
   async printA4Sheet(
@@ -252,15 +261,10 @@ class ApiService {
     rows: number = 7,
     printer: string | null = null,
     copies: number = 1
-  ): Promise<ApiResponse<{
-    success: boolean;
-    job_id?: string;
-    printer?: string;
-    message?: string;
-  }>> {
+  ): Promise<ApiResponse<PrintResponse>> {
     console.log(`🖨️ Printing A4 sheet (${rows} rows)...`);
     
-    return this.request("/print", {
+    return this.request<PrintResponse>("/print", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -355,15 +359,10 @@ class ApiService {
     fontName: string = "default",
     printer: string | null = null,
     copies: number = 1
-  ): Promise<ApiResponse<{
-    success: boolean;
-    job_id?: string;
-    printer?: string;
-    message?: string;
-  }>> {
+  ): Promise<ApiResponse<PrintResponse>> {
     console.log("🖨️ Printing polaroid sheet...");
     
-    return this.request("/polaroid/print", {
+    return this.request<PrintResponse>("/polaroid/print", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -373,6 +372,31 @@ class ApiService {
         text1: text1,
         text2: text2,
         font_name: fontName,
+        printer: printer,
+        copies: copies,
+      }),
+    });
+  }
+
+  /**
+   * Print passport sheet (4x6)
+   */
+  async printPassportSheet(
+    imageId: string,
+    layout: "3x4" | "2x3" = "3x4",
+    printer: string | null = null,
+    copies: number = 1
+  ): Promise<ApiResponse<PrintResponse>> {
+    console.log(`🖨️ Printing passport sheet (${layout})...`);
+    
+    return this.request<PrintResponse>("/print", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        image_id: imageId,
+        layout: layout,
         printer: printer,
         copies: copies,
       }),
