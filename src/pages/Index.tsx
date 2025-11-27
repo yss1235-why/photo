@@ -494,15 +494,15 @@ const renderStep = () => {
             />
           );
         
-       case 2:
-        return (
-          <PaperTypeSelector
-            selectedType={selectedPaperType}
-            onSelect={handlePaperTypeSelect}
-            onContinue={handlePaperTypeContinue}
-            enabledFeatures={enabledFeatures}
-          />
-        );
+        case 2:
+          return (
+            <PaperTypeSelector
+              selectedType={selectedPaperType}
+              onSelect={handlePaperTypeSelect}
+              onContinue={handlePaperTypeContinue}
+              enabledFeatures={enabledFeatures}
+            />
+          );
       
       case 3:
         return (
@@ -575,6 +575,7 @@ const renderStep = () => {
             selectedType={selectedPaperType}
             onSelect={handlePaperTypeSelect}
             onContinue={handlePaperTypeContinue}
+            enabledFeatures={enabledFeatures}
           />
         );
       
