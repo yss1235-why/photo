@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { FileImage, Camera, Check, FileText } from "lucide-react";
-import { PaperType, PAPER_TYPE_OPTIONS } from "@/types";
+import { PaperType, PAPER_TYPE_OPTIONS, FrontendFeatures } from "@/types";
+
 interface PaperTypeSelectorProps {
   selectedType: PaperType;
   onSelect: (type: PaperType) => void;
   onContinue: () => void;
+  enabledFeatures?: FrontendFeatures;
 }
 
 const getIconForType = (type: PaperType) => {
@@ -43,8 +45,47 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
   selectedType,
   onSelect,
   onContinue,
+  enabledFeatures,
 }) => {
-  const selectedOption = PAPER_TYPE_OPTIONS.find((o) => o.value === selectedType);
+  // Filter options based on enabled features
+  const filteredOptions = PAPER_TYPE_OPTIONS.filter((option) => {
+    if (!enabledFeatures) return true; // Show all if no config loaded
+    
+    switch (option.value) {
+      case "passport":
+        return enabledFeatures.passport_4x6;
+      case "passport-a4":
+        return enabledFeatures.passport_a4;
+      case "polaroid":
+        return enabledFeatures.polaroid;
+      default:
+        return true;
+    }
+  });
+
+  // If current selection is disabled, auto-select first available
+  React.useEffect(() => {
+    if (filteredOptions.length > 0 && !filteredOptions.find(o => o.value === selectedType)) {
+      onSelect(filteredOptions[0].value);
+    }
+  }, [filteredOptions, selectedType, onSelect]);
+
+  const selectedOption = filteredOptions.find((o) => o.value === selectedType);
+
+  // If no features are enabled, show message
+  if (filteredOptions.length === 0) {
+    return (
+      <Card className="p-8 max-w-3xl mx-auto">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-gray-700">No Features Available</h2>
+          <p className="text-muted-foreground">
+            All photo printing features are currently disabled by the administrator.
+            Please contact support for assistance.
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-8 max-w-3xl mx-auto">
@@ -61,7 +102,7 @@ export const PaperTypeSelector: React.FC<PaperTypeSelectorProps> = ({
           onValueChange={(value) => onSelect(value as PaperType)}
           className="gap-4"
         >
-          {PAPER_TYPE_OPTIONS.map((option) => {
+          {filteredOptions.map((option) => {
             const isSelected = selectedType === option.value;
             const Icon = () => getIconForType(option.value);
             const gradientClass = getColorForType(option.value);
