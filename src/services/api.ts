@@ -13,25 +13,87 @@ import { FrontendConfig, PrintResponse } from "@/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const USE_CLOUDINARY = import.meta.env.VITE_USE_CLOUDINARY !== "false";
+
 class ApiService {
   private cloudinaryEnabled = USE_CLOUDINARY;
   private cloudinaryFallbackCount = 0;
   private maxCloudinaryAttempts = 3;
+  private sessionToken: string | null = null;
+
+  /**
+   * Set the session token for one-time link mode
+   */
+  setSessionToken(token: string | null) {
+    this.sessionToken = token;
+    console.log("🔑 Session token set:", token ? token.substring(0, 8) + "..." : "null");
+  }
+
+  /**
+   * Get the current session token
+   */
+  getSessionToken(): string | null {
+    return this.sessionToken;
+  }
+
+  /**
+   * Validate session token with backend
+   */
+  async validateSession(token: string): Promise<{ valid: boolean; reason: string }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/api/session/validate?token=${token}`);
+      if (!response.ok) {
+        return { valid: false, reason: "request_failed" };
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Session validation error:", error);
+      return { valid: false, reason: "network_error" };
+    }
+  }
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
-      const url = `${API_BASE_URL}${endpoint}`;
+      // Build URL with session token if available
+      let url = `${API_BASE_URL}${endpoint}`;
+      if (this.sessionToken) {
+        const separator = url.includes("?") ? "&" : "?";
+        url = `${url}${separator}session=${this.sessionToken}`;
+      }
+      
       console.log("API Request:", url);
+      
+      // Add session token to headers as well
+      const headers: Record<string, string> = {
+        ...(options.headers as Record<string, string>),
+      };
+      if (this.sessionToken) {
+        headers["X-Session-Token"] = this.sessionToken;
+      }
       
       const response = await fetch(url, {
         ...options,
-        headers: {
-          ...options.headers,
-        },
+        headers,
       });
+
+      // Handle session errors
+      if (response.status === 401) {
+        const errorData = await response.json().catch(() => ({}));
+        const reason = errorData.error || "session_required";
+        
+        // Redirect to invalid session page
+        if (typeof window !== "undefined") {
+          window.location.href = `/invalid-session?reason=${reason}`;
+        }
+        
+        return {
+          success: false,
+          error: errorData.message || "Session invalid or expired",
+        };
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
