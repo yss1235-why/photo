@@ -492,11 +492,11 @@ const renderStep = () => {
           return (
             <Step2Crop
               imageUrl={photoData.original!}
-              onCropComplete={handleCropComplete}
+              onCropComplete={handlePolaroidCropComplete}
               onRetake={handleRetake}
-              aspectRatio={32.42 / 40.0}
-              title="Crop Your A4 Passport Photo"
-              subtitle="Position your face within the A4 passport frame"
+              aspectRatio={2.3 / 2.5}
+              title="Crop Your Polaroid Photo"
+              subtitle="Position your image within the polaroid frame"
             />
           );
         
