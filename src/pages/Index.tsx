@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Camera, ImageIcon, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Step1Upload from "@/components/steps/Step1Upload";
@@ -19,7 +20,11 @@ import { apiService } from "@/services/api";
 
 const Index = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
+  const [sessionValidated, setSessionValidated] = useState(false);
+  const [sessionChecking, setSessionChecking] = useState(true);
   const [photoData, setPhotoData] = useState<PhotoData>({
     original: null,
     processed: null,
@@ -56,7 +61,7 @@ const Index = () => {
   const [configLoading, setConfigLoading] = useState(true);
   const [isMobileDevice, setIsMobileDevice] = useState(true);
 
-  // Fetch frontend config on mount
+ // Fetch frontend config on mount
   useEffect(() => {
     const fetchConfig = async () => {
       try {
@@ -64,11 +69,44 @@ const Index = () => {
         if (response.success && response.data) {
           console.log("⚙️ Frontend config loaded:", response.data);
           setFrontendConfig(response.data);
+          
+          // Check session if one-time link mode is enabled
+          if (response.data.one_time_link_mode) {
+            const sessionToken = searchParams.get("session");
+            
+            if (!sessionToken) {
+              console.log("❌ No session token, redirecting...");
+              navigate("/invalid-session?reason=session_required");
+              return;
+            }
+            
+            // Validate session with backend
+            const validation = await apiService.validateSession(sessionToken);
+            
+            if (!validation.valid) {
+              console.log("❌ Invalid session:", validation.reason);
+              navigate(`/invalid-session?reason=${validation.reason}`);
+              return;
+            }
+            
+            // Session is valid, store token for API requests
+            apiService.setSessionToken(sessionToken);
+            console.log("✅ Session validated successfully");
+            setSessionValidated(true);
+          } else {
+            // One-time link mode is disabled, no session needed
+            setSessionValidated(true);
+          }
+        } else {
+          // Couldn't load config, assume no session needed
+          setSessionValidated(true);
         }
       } catch (error) {
         console.error("Failed to load frontend config:", error);
+        setSessionValidated(true);
       } finally {
         setConfigLoading(false);
+        setSessionChecking(false);
       }
     };
 
@@ -81,7 +119,7 @@ const Index = () => {
 
     fetchConfig();
     checkMobile();
-  }, []);
+  }, [searchParams, navigate]);
 
   // Helper function to show appropriate toast for print response
   const showPrintToast = (response: { success: boolean; data?: { queued?: boolean; job_id?: string; printer?: string; message?: string }; error?: string }) => {
@@ -632,6 +670,18 @@ const renderStep = () => {
         return null;
     }
   };
+
+ // Show loading while checking session
+  if (sessionChecking) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Validating session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
